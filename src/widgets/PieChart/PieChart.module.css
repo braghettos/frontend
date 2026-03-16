@@ -1,0 +1,16 @@
+.pieChart {
+  align-self: flex-start;
+  flex: 1 1 auto;
+  max-height: 400px;
+  min-height: 400px;
+  width: 100%;
+}
+
+.pieChart :global(.echarts-for-react),
+.pieChart :global(.echarts-for-react canvas) {
+  display: block;
+  height: 100%;
+  max-height: 400px;
+  min-height: 400px;
+  width: 100%;
+}

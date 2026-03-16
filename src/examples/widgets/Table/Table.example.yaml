@@ -1,0 +1,397 @@
+# Empty columns array
+# Target: simulate a configuration where the table structure is defined but contains no columns.
+# Expected behavior: displays a message explaining that the table cannot be displayed without columns, 
+# helping the user understand that at least one column definition is required for proper rendering.
+kind: Table
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-table-empty-columns
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [barcharts, buttons, filters, flowcharts, linecharts, markdowns, paragraphs, piecharts, yamlviewers]
+    columns: []
+    data:
+      - - valueKey: name
+          kind: jsonSchemaType
+          type: string
+          stringValue: "Alice"
+---
+# Empty data array
+# Target: simulate the absence of table rows.
+# Expected behavior: renders table headers only (no data rows shown). 
+# This checks that the component handles an explicitly empty dataset gracefully.
+kind: Table
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-table-empty-data
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [barcharts, buttons, filters, flowcharts, linecharts, markdowns, paragraphs, piecharts, yamlviewers]
+    columns:
+      - valueKey: name
+        title: Name
+      - valueKey: age
+        title: Age
+    data: []
+---
+# Basic table with strings and numbers
+# Target: confirm that basic JSON schema types render correctly as text cells.
+# Expected behavior: table shows string and integer values with plain styling.
+kind: Table
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-table-basic
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [barcharts, buttons, filters, flowcharts, linecharts, markdowns, paragraphs, piecharts, yamlviewers]
+    pageSize: 5
+    columns:
+      - valueKey: name
+        title: Name
+      - valueKey: age
+        title: Age
+    data:
+      - - valueKey: name
+          kind: jsonSchemaType
+          type: string
+          stringValue: "Alice"
+        - valueKey: age
+          kind: jsonSchemaType
+          type: integer
+          numberValue: 30
+      - - valueKey: name
+          kind: jsonSchemaType
+          type: string
+          stringValue: "Bob"
+        - valueKey: age
+          kind: jsonSchemaType
+          type: integer
+          numberValue: 42
+---
+# Mixed data types (string, boolean, decimal, array)
+# Target: test rendering for all jsonSchemaType variations.
+# Expected behavior: each data type is displayed as text, array values are stringified.
+kind: Table
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-table-mixed-types
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [barcharts, buttons, filters, flowcharts, linecharts, markdowns, paragraphs, piecharts, yamlviewers]
+    columns:
+      - valueKey: name
+        title: Name
+      - valueKey: active
+        title: Active
+      - valueKey: balance
+        title: Balance
+      - valueKey: tags
+        title: Tags
+    data:
+      - 
+        - valueKey: name
+          kind: jsonSchemaType
+          type: string
+          stringValue: "Charlie"
+        - valueKey: active
+          kind: jsonSchemaType
+          type: boolean
+          booleanValue: true
+        - valueKey: balance
+          kind: jsonSchemaType
+          type: decimal
+          decimalValue: "1023.55"
+        - valueKey: tags
+          kind: jsonSchemaType
+          type: array
+          arrayValue: ["admin", "tester"]
+---
+# Table including icons
+# Target: verify that cells of kind=icon are rendered as FontAwesome icons.
+# Expected behavior: each row shows the corresponding icon in the last column.
+kind: Table
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-table-icons
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [barcharts, buttons, filters, flowcharts, linecharts, markdowns, paragraphs, piecharts, yamlviewers]
+    columns:
+      - valueKey: name
+        title: Name
+      - valueKey: icon
+        title: Icon
+        color: blue
+    data:
+      - 
+        - valueKey: name
+          kind: jsonSchemaType
+          type: string
+          stringValue: "Deployment"
+        - valueKey: icon
+          kind: icon
+          stringValue: fa-rocket
+      - 
+        - valueKey: name
+          kind: jsonSchemaType
+          type: string
+          stringValue: "Warning"
+        - valueKey: icon
+          kind: icon
+          stringValue: fa-exclamation-triangle
+---
+# Table with widget reference
+# Target: illustrate how widget references would be handled.
+# Expected behavior: component attempts to render nested widget using resourceRefId.
+# (This will fail here without a valid referenced widget endpoint, but demonstrates intent.)
+kind: Table
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-table-nested-widget
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [barcharts, buttons, filters, flowcharts, linecharts, markdowns, paragraphs, piecharts, yamlviewers]
+    columns:
+      - valueKey: name
+        title: Widget Name
+      - valueKey: widget
+        title: Widget
+    data:
+      - 
+        - valueKey: name
+          kind: jsonSchemaType
+          type: string
+          stringValue: "Markdown"
+        - valueKey: widget
+          kind: widget
+          resourceRefId: example-table-nested-widget-markdown
+      - 
+        - valueKey: name
+          kind: jsonSchemaType
+          type: string
+          stringValue: "Button"
+        - valueKey: widget
+          kind: widget
+          resourceRefId: example-table-nested-widget-button
+  resourcesRefs:
+    items:
+      - id: example-table-nested-widget-markdown
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-table-nested-widget-markdown
+        namespace: krateo-system
+        resource: markdowns
+        verb: GET
+      - id: example-table-nested-widget-button
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-table-nested-widget-button
+        namespace: krateo-system
+        resource: buttons
+        verb: GET
+---
+kind: Markdown
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-table-nested-widget-markdown
+  namespace: krateo-system
+spec:
+  widgetData:
+    markdown: |
+      This is not text but a **Markdown** widget!
+---
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-table-nested-widget-button
+  namespace: krateo-system
+spec:
+  widgetData:
+    actions:
+      navigate:
+        - id: navigate-action-page
+          path: /dashboard
+          type: navigate    
+    label: Navigate to composition
+    icon: fa-sun
+    type: primary
+    clickActionId: navigate-action-page
+  resourcesRefs:
+    items:
+      - id: dashboard-page
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: dashboard-page
+        namespace: krateo-system
+        resource: pages
+        verb: GET
+---
+# Table with null and missing values
+# Target: ensure that null or undefined cells render gracefully.
+# Expected behavior: table displays '-' placeholders in cells without valid content.
+kind: Table
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-table-null-values
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [barcharts, buttons, filters, flowcharts, linecharts, markdowns, paragraphs, piecharts, yamlviewers]
+    columns:
+      - valueKey: name
+        title: Name
+      - valueKey: status
+        title: Status
+    data:
+      - 
+        - valueKey: name
+          kind: jsonSchemaType
+          type: null
+        - valueKey: status
+          kind: jsonSchemaType
+          type: string
+          stringValue: "Active"
+      - 
+        - valueKey: name
+          kind: jsonSchemaType
+          type: string
+          stringValue: "Ghost entry"
+        - valueKey: status
+          kind: jsonSchemaType
+          type: null
+---
+# Table with filter
+# Target: demonstrate interaction between table and filter components using a common prefix.
+# Expected behavior: the table automatically applies filter values shared via the same prefix,
+# showing only the rows that match the current filter criteria. This validates that the widget
+# integrates correctly with the global FiltersProvider context.
+kind: Table
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-table-with-filter
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [barcharts, buttons, filters, flowcharts, linecharts, markdowns, paragraphs, piecharts, yamlviewers]
+    prefix: example-table-with-filter-prefix
+    columns:
+      - valueKey: name
+        title: Name
+      - valueKey: role
+        title: Role
+      - valueKey: users
+        title: Users
+    data:
+      - 
+        - valueKey: name
+          kind: jsonSchemaType
+          type: string
+          stringValue: "frontend-pod"
+        - valueKey: role
+          kind: jsonSchemaType
+          type: string
+          stringValue: "frontend"
+        - valueKey: users
+          kind: jsonSchemaType
+          type: array
+          arrayValue: ["matteo", "marco", "luca", "giovanni"]
+      - 
+        - valueKey: name
+          kind: jsonSchemaType
+          type: string
+          stringValue: "backend-pod"
+        - valueKey: role
+          kind: jsonSchemaType
+          type: string
+          stringValue: "backend"
+        - valueKey: users
+          kind: jsonSchemaType
+          type: array
+          arrayValue: ["pippo", "pluto", "paperino"]
+---
+kind: Filters
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-table-with-filter-filter
+  namespace: krateo-system
+spec:
+  widgetData:
+    prefix: example-table-with-filter-prefix
+    fields:
+      - label: Pod Name
+        name:
+          - name
+        type: string
+      - label: Users
+        name:
+          - users
+        type: string
+---
+# Table with pagination
+# Target: verify that pagination is correctly activated when the number of rows exceeds the configured pageSize.
+# Expected behavior: the table displays only the first set of rows according to pageSize, 
+# with navigation controls available to move through the remaining pages. 
+# This ensures a clean and predictable layout even with large datasets.
+kind: Table
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-table-with-pagination
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [barcharts, buttons, filters, flowcharts, linecharts, markdowns, paragraphs, piecharts, yamlviewers]
+    pageSize: 3
+    columns:
+      - valueKey: id
+        title: ID
+      - valueKey: name
+        title: Name
+    data:
+      - 
+        - valueKey: id
+          kind: jsonSchemaType
+          type: integer
+          numberValue: 1
+        - valueKey: name
+          kind: jsonSchemaType
+          type: string
+          stringValue: "Alpha"
+      - 
+        - valueKey: id
+          kind: jsonSchemaType
+          type: integer
+          numberValue: 2
+        - valueKey: name
+          kind: jsonSchemaType
+          type: string
+          stringValue: "Bravo"
+      - 
+        - valueKey: id
+          kind: jsonSchemaType
+          type: integer
+          numberValue: 3
+        - valueKey: name
+          kind: jsonSchemaType
+          type: string
+          stringValue: "Charlie"
+      - 
+        - valueKey: id
+          kind: jsonSchemaType
+          type: integer
+          numberValue: 4
+        - valueKey: name
+          kind: jsonSchemaType
+          type: string
+          stringValue: "Delta"
+      - 
+        - valueKey: id
+          kind: jsonSchemaType
+          type: integer
+          numberValue: 5
+        - valueKey: name
+          kind: jsonSchemaType
+          type: string
+          stringValue: "Echo"

@@ -1,0 +1,17 @@
+  .richRow {
+    border-bottom: solid 1px var(--border-color);
+    margin-top: var(--spacing-md);
+    width: 100%;
+
+    .primary {
+      flex: 1;
+    }
+
+    .secondary {
+      width: 20%;
+    }
+
+    .subtext {
+      color: var(--gray-color);
+    }
+  }

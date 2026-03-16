@@ -1,0 +1,266 @@
+# Empty items array
+# Target: simulate a row with no defined children.
+# Expected behavior: the layout remains empty without any spacing or placeholders,
+# confirming that an empty configuration produces no visible output.
+kind: Row
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-row-empty
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [tables, buttons, panels]
+    items: []
+  resourcesRefs:
+    items: []
+---
+# Invalid resource reference
+# Target: verify the behavior when an item references a non-existent resource.
+# Expected behavior: the row renders only valid children,
+# ignoring the invalid reference without affecting the rest of the layout.
+kind: Row
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-row-invalid-ref
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [tables]
+    items:
+      - resourceRefId: non-existent-widget
+      - resourceRefId: example-table-basic
+  resourcesRefs:
+    items:
+      - id: example-table-basic
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-table-basic
+        namespace: krateo-system
+        resource: tables
+        verb: GET
+---
+# Single full-width child
+# Target: verify that a single item spans the full available width when no size is provided.
+# Expected behavior: the single widget expands to fill the entire row width, 
+# confirming that default sizing logic (24 columns) applies correctly.
+kind: Row
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-row-single
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [tables]
+    items:
+      - resourceRefId: example-table-basic
+  resourcesRefs:
+    items:
+      - id: example-table-basic
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-table-basic
+        namespace: krateo-system
+        resource: tables
+        verb: GET
+---
+# Two proportional children
+# Target: confirm that multiple items share the row width proportionally when sizes are not defined.
+# Expected behavior: both children are automatically distributed evenly (12 columns each),
+# maintaining consistent spacing and alignment.
+kind: Row
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-row-even-split
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [tables, piecharts]
+    items:
+      - resourceRefId: example-table-basic
+      - resourceRefId: example-piechart-full-fill
+  resourcesRefs:
+    items:
+      - id: example-table-basic
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-table-basic
+        namespace: krateo-system
+        resource: tables
+        verb: GET
+      - id: example-piechart-full-fill
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-piechart-full-fill
+        namespace: krateo-system
+        resource: piecharts
+        verb: GET
+---
+# Custom column sizes
+# Target: verify that explicit size values influence the horizontal distribution.
+# Expected behavior: the row adapts so that each widget occupies the defined proportion
+# of the total 24-column grid (e.g., 18/6 split in this case).
+kind: Row
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-row-custom-sizes
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [tables, piecharts]
+    items:
+      - resourceRefId: example-table-basic
+        size: 18
+      - resourceRefId: example-piechart-full-fill
+        size: 6
+  resourcesRefs:
+    items:
+      - id: example-table-basic
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-table-basic
+        namespace: krateo-system
+        resource: tables
+        verb: GET
+      - id: example-piechart-full-fill
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-piechart-full-fill
+        namespace: krateo-system
+        resource: piecharts
+        verb: GET
+---
+# Alignment within cells
+# Target: verify horizontal alignment when some items specify alignment attributes.
+# Expected behavior: elements with alignment 'right' or 'center' are positioned accordingly 
+# within their own column, while others remain left-aligned by default.
+kind: Row
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-row-cells-alignment
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [buttons, tables]
+    items:
+      - resourceRefId: example-table-basic
+      - resourceRefId: example-row-responsive-button
+        alignment: right
+  resourcesRefs:
+    items:
+      - id: example-table-basic
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-table-basic
+        namespace: krateo-system
+        resource: tables
+        verb: GET
+      - id: example-row-responsive-button
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-row-responsive-button
+        namespace: krateo-system
+        resource: buttons
+        verb: GET
+---
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-row-responsive-button
+  namespace: krateo-system
+spec:
+  widgetData:
+    actions: {}
+    label: Row button
+    icon: fa-sun
+    type: primary
+    clickActionId: action-1
+  resourcesRefs:
+    items: []
+---
+# Nested composition
+# Target: confirm that a row can contain a more complex child layout, such as a panel or another layout widget.
+# Expected behavior: nested layouts render within the available cell space,
+# maintaining correct padding and height inheritance without overflow.
+kind: Row
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-row-nested
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [columns]
+    items:
+      - resourceRefId: example-column-multiple-child
+  resourcesRefs:
+    items:
+      - id: example-column-multiple-child
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-column-multiple-child
+        namespace: krateo-system
+        resource: columns
+        verb: GET
+---
+# Responsive layout stress test
+# Target: validate the layout's adaptability on different screen sizes.
+# Expected behavior: as the viewport shrinks, the row wraps correctly
+# without cutting off children or causing overlap, ensuring full visibility at all breakpoints.
+kind: Row
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-row-responsive
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [tables, piecharts, buttons]
+    items:
+      - resourceRefId: example-table-basic
+        size: 12
+      - resourceRefId: example-piechart-full-fill
+        size: 6
+        alignment: center
+      - resourceRefId: example-row-responsive-button
+        size: 6
+        alignment: center
+  resourcesRefs:
+    items:
+      - id: example-table-basic
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-table-basic
+        namespace: krateo-system
+        resource: tables
+        verb: GET
+      - id: example-piechart-full-fill
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-piechart-full-fill
+        namespace: krateo-system
+        resource: piecharts
+        verb: GET
+      - id: example-row-responsive-button
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-row-responsive-button
+        namespace: krateo-system
+        resource: buttons
+        verb: GET
+---
+# Alignment within row
+# Target: verify horizontal alignment when alignment is specified for the entire row.
+# Expected behavior: elements are positioned accordinly to the 'top' specified alignment.
+kind: Row
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-row-alignment
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [tables, buttons]
+    alignment: top
+    items:
+      - resourceRefId: example-table-basic
+      - resourceRefId: example-row-responsive-button
+        alignment: center
+  resourcesRefs:
+    items:
+      - id: example-table-basic
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-table-basic
+        namespace: krateo-system
+        resource: tables
+        verb: GET
+      - id: example-row-responsive-button
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-row-responsive-button
+        namespace: krateo-system
+        resource: buttons
+        verb: GET

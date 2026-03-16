@@ -1,0 +1,45 @@
+.chart {
+  flex: 1 1 auto;
+  width: 100%;
+
+  .chartBarsRow {
+    width: 100%;
+
+    .chartBarsData {
+      align-items: baseline;
+      display: flex;
+      justify-content: space-between;
+
+      .chartBarsLabel {
+        font-size: var(--font-size-sm);
+      }
+
+      .chartBarsValue {
+        font-size: var(--font-size-sm);
+      }
+    }
+
+    .chartBarsList {
+      line-height: 0.8;
+      margin-bottom: 10px;
+      margin-top: 0;
+    }
+
+    :global .ant-progress {
+      height: 6px;
+      margin: -15px 0 0;
+    }
+
+    :global .ant-progress-steps {
+      width: 100%;
+    }
+
+    :global .ant-progress-steps-outer {
+      justify-content: space-between;
+    }
+
+    :global .ant-progress-inner {
+      vertical-align: top;
+    }
+  }
+}

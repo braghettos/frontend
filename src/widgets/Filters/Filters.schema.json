@@ -1,0 +1,99 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v1beta1"
+    },
+    "kind": {
+      "type": "string",
+      "default": "Filters"
+    },
+    "spec": {
+      "type": "object",
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "required": ["fields", "prefix"],
+          "properties": {
+            "prefix": {
+              "description": "the prefix to share filters values to other widgets",
+              "type": "string"
+            },
+            "fields": {
+              "type": "array",
+              "description": "it defines the filters as fields of a Form",
+              "items": {
+                "type": "object",
+                "required": ["label", "type", "name"],
+                "properties": {
+                  "label": {
+                    "description": "the label of the field",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "the name of the filter field, it must to be identical to the widget prop name to filter or data in dataset",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "description": {
+                    "description": "text to show as tooltip",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "it's the filter field type, to render input, select, radio buttons, date picker or daterange picker",
+                    "type": "string",
+                    "enum": ["string", "boolean", "number", "date", "daterange"]
+                  },
+                  "options": {
+                    "description": "they're the options for select or radio, the type must be 'string'",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": {
+                "type": "string"
+              },
+              "expression": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["widgetData"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}

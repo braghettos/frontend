@@ -1,0 +1,18 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+  .button {
+    position: absolute;
+    right: 6px;
+    top: 20px;
+    z-index: 1;
+  }
+
+  .codeViewer {
+    max-height: 600px;
+    overflow-y: auto;
+    position: relative;
+  }
+}

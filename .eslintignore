@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+public/
+.vscode/
+.idea/
+.yarn/
+.pnp.*
+website/
+playwright-report/

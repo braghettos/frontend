@@ -1,0 +1,1132 @@
+# Action not found
+# Target: ensure the widget correctly handles missing action definition within "actions".
+# Expected behavior: clicking the button triggers an error notification ("The widget definition does not include an action ...").
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-no-action
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Click
+    icon: fa-trash
+    type: primary
+    clickActionId: click
+    actions: {}
+  resourcesRefs:
+    items: []
+---
+# Default button with label only
+# Target: verify correct rendering of text label with default shape and size.
+# Expected behavior: displays a standard button labeled “Run”.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-basic
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Run
+    type: primary
+    shape: default
+    clickActionId: navigate-example-button-page
+    actions:
+      navigate:
+        - id: navigate-example-button-page
+          path: /button
+          type: navigate
+  resourcesRefs:
+    items:
+      - id: navigate-example-button-page
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-button-page
+        namespace: krateo-system
+        resource: pages
+        verb: GET
+---
+# Primary button with icon and label
+# Target: confirm correct layout of icon + label combination.
+# Expected behavior: icon appears to the left of the text with correct spacing.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-with-icon
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Deploy
+    icon: fa-rocket
+    type: primary
+    shape: default
+    size: middle
+    clickActionId: navigate-example-button-page
+    actions:
+      navigate:
+        - id: navigate-example-button-page
+          path: /button
+          type: navigate
+  resourcesRefs:
+    items:
+      - id: navigate-example-button-page
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-button-page
+        namespace: krateo-system
+        resource: pages
+        verb: GET
+---
+# Circle-shaped button with icon only
+# Target: verify proper sizing and centering of circular icon-only button.
+# Expected behavior: renders compact circle button showing only the icon.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-icon-circle
+  namespace: krateo-system
+spec:
+  widgetData:
+    icon: fa-trash
+    shape: circle
+    type: primary
+    clickActionId: navigate-example-button-page
+    actions:
+      navigate:
+        - id: navigate-example-button-page
+          path: /button
+          type: navigate
+  resourcesRefs:
+    items:
+      - id: navigate-example-button-page
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-button-page
+        namespace: krateo-system
+        resource: pages
+        verb: GET
+---
+# Default rounded button with custom color
+# Target: ensure color token and rounded shape are correctly applied.
+# Expected behavior: button has smooth rounded corners and red color variant.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-rounded-red
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Restart
+    backgroundColor: red
+    type: primary
+    
+    size: middle
+    clickActionId: navigate-example-button-page
+    actions:
+      navigate:
+        - id: navigate-example-button-page
+          path: /button
+          type: navigate
+  resourcesRefs:
+    items:
+      - id: navigate-example-button-page
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-button-page
+        namespace: krateo-system
+        resource: pages
+        verb: GET
+---
+# Large primary button
+# Target: verify consistent scaling for “large” size.
+# Expected behavior: increased padding and text size; alignment preserved.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-large-primary
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Approve
+    type: primary
+    size: large
+    shape: default
+    clickActionId: navigate-example-button-page
+    actions:
+      navigate:
+        - id: navigate-example-button-page
+          path: /button
+          type: navigate
+  resourcesRefs:
+    items:
+      - id: navigate-example-button-page
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-button-page
+        namespace: krateo-system
+        resource: pages
+        verb: GET
+---
+# Small dashed button
+# Target: confirm rendering of alternative visual “dashed” style.
+# Expected behavior: smaller text and dotted outline.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-small-dashed
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Details
+    type: dashed
+    size: small
+    shape: default
+    clickActionId: navigate-example-button-page
+    actions:
+      navigate:
+        - id: navigate-example-button-page
+          path: /button
+          type: navigate
+  resourcesRefs:
+    items:
+      - id: navigate-example-button-page
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-button-page
+        namespace: krateo-system
+        resource: pages
+        verb: GET
+---
+# Link-style button
+# Target: verify inline link appearance (no background or border).
+# Expected behavior: visually rendered as a text hyperlink.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-link
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: View Logs
+    type: link
+    size: middle
+    clickActionId: navigate-example-button-page
+    actions:
+      navigate:
+        - id: navigate-example-button-page
+          path: /button
+          type: navigate
+  resourcesRefs:
+    items:
+      - id: navigate-example-button-page
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-button-page
+        namespace: krateo-system
+        resource: pages
+        verb: GET
+---
+# Text-only button
+# Target: confirm flat minimal variant without border or background.
+# Expected behavior: renders as simple text element, aligned with other inline elements.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-text
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Edit
+    type: text
+    shape: default
+    clickActionId: navigate-example-button-page
+    actions:
+      navigate:
+        - id: navigate-example-button-page
+          path: /button
+          type: navigate
+  resourcesRefs:
+    items:
+      - id: navigate-example-button-page
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-button-page
+        namespace: krateo-system
+        resource: pages
+        verb: GET
+---
+# navigate - Navigation to another page using `path`
+# Target: trigger navigation to a static route (`/barchart`) when the button is clicked.
+# Expected behavior: clicking the button redirects the user to `/barchart`.
+# No confirmation or loading state are required.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-navigate-path
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Navigate to Bar Chart
+    type: primary
+    shape: default
+    clickActionId: navigate-to-barchart
+    actions:
+      navigate:
+        - id: navigate-to-barchart
+          path: /barchart
+          type: navigate
+  resourcesRefs:
+    items: []
+---
+# navigate - Navigation to another resource using `resourceRefId`
+# Target: navigate to another dashboard resource (identified by its ref ID).
+# Expected behavior: clicking the button triggers navigation to the target resource page.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-navigate-resource
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Navigate to Dashboard
+    type: primary
+    clickActionId: navigate-to-dashboard
+    actions:
+      navigate:
+        - id: navigate-to-dashboard
+          type: navigate
+          resourceRefId: dashboard-page
+  resourcesRefs:
+    items:
+      - id: dashboard-page
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: dashboard-page
+        namespace: krateo-system
+        resource: pages
+        verb: GET
+---
+# navigate - Navigation with confirmation prompt (`requireConfirmation: true`)
+# Target: prevent accidental navigation by requiring explicit user confirmation.
+# Expected behavior: before navigating, a confirmation dialog is shown.
+# Only if confirmed does the navigation occur.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-navigate-confirm
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Navigate to Bar Chart
+    type: primary
+    size: middle
+    clickActionId: navigate-to-barchart
+    actions:
+      navigate:
+        - id: navigate-to-barchart
+          path: /barchart
+          type: navigate
+          requireConfirmation: true
+  resourcesRefs:
+    items: []
+---
+# navigate - Navigation with loading indicator
+# Target: provide visual feedback during navigation.
+# Expected behavior: the button shows a loading spinner while navigation is being processed.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-navigate-loading
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Navigate to Bar Chart
+    type: primary
+    size: middle
+    clickActionId: navigate-to-barchart
+    actions:
+      navigate:
+        - id: navigate-to-barchart
+          path: /barchart
+          type: navigate
+          loading:
+            display: true
+  resourcesRefs:
+    items: []
+---
+# openDrawer - default size
+# Target: verify that a drawer can be opened using a defined resource reference
+  # Expected behavior: when triggered, no confirmation is required;
+# the drawer opens at the default width and displays the resource contents once loaded.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-open-drawer-default
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Open Drawer Default
+    type: primary
+    
+    size: middle
+    clickActionId: open-drawer-default
+    actions:
+      openDrawer:
+        - id: open-drawer-default
+          type: openDrawer
+          resourceRefId: example-markdown-basic
+          size: default
+          title: Default Drawer Example
+  resourcesRefs:
+    items:
+      - id: example-markdown-basic
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-markdown-basic
+        namespace: krateo-system
+        resource: markdowns
+        verb: GET
+---
+# openDrawer - large size
+# Target: verify that a drawer can be opened in large mode
+# Expected behavior: a large-size drawer opens with the defined title and resource content.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-open-drawer-large
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Open Drawer Large
+    type: primary
+    
+    size: middle
+    clickActionId: open-drawer-large
+    actions:
+      openDrawer:
+        - id: open-drawer-large
+          type: openDrawer
+          resourceRefId: example-markdown-basic
+          size: large
+          title: Confirmed Large Drawer Example
+          loading:
+            display: false
+  resourcesRefs:
+    items:
+      - id: example-markdown-basic
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-markdown-basic
+        namespace: krateo-system
+        resource: markdowns
+        verb: GET
+---
+# openModal - default size
+# Target: ensure that a modal dialog can be opened,
+# displaying a standard modal layout with the given title and resource.
+# Expected behavior: the modal appears at the default width and loads the referenced resource.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-open-modal-default
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Open Modal Default
+    type: primary
+    
+    size: middle
+    clickActionId: open-modal-default
+    actions:
+      openModal:
+        - id: open-modal-default
+          type: openModal
+          resourceRefId: example-yamlviewer-simple-json
+          title: Default Modal Example
+          loading:
+            display: true
+          size: default
+  resourcesRefs:
+    items:
+      - id: example-yamlviewer-simple-json
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-yamlviewer-simple-json
+        namespace: krateo-system
+        resource: yamlviewers
+        verb: GET
+---
+# openModal - large size
+# Target: ensure that a modal dialog can be opened,
+# displaying a large modal layout with the given title and resource.
+# Expected behavior: the modal appears at the large width and loads the referenced resource.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-open-modal-large
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Open Modal Large
+    type: primary
+    
+    size: middle
+    clickActionId: open-modal-large
+    actions:
+      openModal:
+        - id: open-modal-large
+          type: openModal
+          resourceRefId: example-yamlviewer-simple-json
+          title: Large Modal Example
+          loading:
+            display: true
+          size: large
+  resourcesRefs:
+    items:
+      - id: example-yamlviewer-simple-json
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-yamlviewer-simple-json
+        namespace: krateo-system
+        resource: yamlviewers
+        verb: GET
+---
+# openModal - custom width
+# Target: confirm that a modal can be displayed with a custom width,
+# ensuring that custom sizing rules are correctly applied by the system.
+# Expected behavior: when triggered, no confirmation is required;
+# the modal expands to the defined custom width and shows the referenced resource.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-open-modal-custom
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Open Modal Custom Width
+    color: purple
+    type: primary
+    
+    size: middle
+    clickActionId: open-modal-custom
+    actions:
+      openModal:
+        - id: open-modal-custom
+          type: openModal
+          resourceRefId: example-yamlviewer-simple-json
+          title: Custom Width Modal Example
+          size: custom
+          customWidth: 30%
+          loading:
+            display: false
+  resourcesRefs:
+    items:
+      - id: example-yamlviewer-simple-json
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-yamlviewer-simple-json
+        namespace: krateo-system
+        resource: yamlviewers
+        verb: GET
+---
+# openModal - fullscreen mode
+# Target: verify that a modal can occupy the full viewport width when configured in fullscreen mode,
+# confirming proper rendering and interaction across the available space.
+# Expected behavior: the modal opens instantly and expands to fill the entire screen.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-open-modal-fullscreen
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Open Modal Fullscreen
+    type: primary
+    
+    size: middle
+    clickActionId: open-modal-fullscreen
+    actions:
+      openModal:
+        - id: open-modal-fullscreen
+          type: openModal
+          resourceRefId: example-yamlviewer-simple-json
+          title: Fullscreen Modal Example
+          size: fullscreen
+          loading:
+            display: false
+  resourcesRefs:
+    items:
+      - id: example-yamlviewer-simple-json
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-yamlviewer-simple-json
+        namespace: krateo-system
+        resource: yamlviewers
+        verb: GET
+---
+# rest - Invalid resourceRefId (reference does not exist in resourcesRefs)
+# Target: action includes resourceRefId but the reference is not provided in resourcesRefs.
+# Expected behavior: error toast indicating that the resource reference is not found; no API call is performed.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-rest-invalid-resource-ref
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Run
+    clickActionId: rest-invalid-ref
+    actions:
+      rest:
+        - id: rest-invalid-ref
+          type: rest
+          resourceRefId: missing-ref
+          headers: []
+  resourcesRefs:
+    items:
+      - id: some-other-ref
+        apiVersion: v1
+        name: whatever
+        namespace: krateo-system
+        resource: configs
+        verb: GET
+---
+# rest - Headers malformed (not a "key: value" structure)
+# Target: one of the headers does not follow the expected textual format.
+# Expected behavior: the header is ignored or causes server-side rejection depending on backend behavior; button still tries to execute.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-rest-malformed-headers
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Execute
+    clickActionId: rest-bad-headers
+    actions:
+      rest:
+        - id: rest-bad-headers
+          type: rest
+          resourceRefId: create-pod
+          headers:
+            - "Authorization Bearer token"
+            - "x-custom: valid"
+  resourcesRefs:
+    items:
+      - id: create-pod
+        apiVersion: v1
+        resource: pods
+        name: create-pod
+        namespace: krateo-system
+        verb: POST
+---
+# rest - Both onSuccessNavigateTo and onEventNavigateTo defined
+# Target: mutually exclusive navigation modes are used simultaneously.
+# Expected behavior: execution stops immediately with an error toast indicating the conflict; no API call is sent.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-rest-conflicting-navigations
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Run Action
+    clickActionId: rest-conflict
+    actions:
+      rest:
+        - id: rest-conflict
+          type: rest
+          resourceRefId: create-pod
+          headers: []
+          onSuccessNavigateTo: "/ok"
+          onEventNavigateTo:
+            eventReason: Completed
+            url: "/event"
+  resourcesRefs:
+    items:
+      - id: create-pod
+        apiVersion: v1
+        resource: pods
+        name: create-pod
+        namespace: krateo-system
+        verb: POST
+---
+# rest - Static payload
+# Target: action payload contains static fields with primitive values.
+# Expected behavior: payload is sent as-is; values are not modified or merged.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-rest-static-payload
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Submit
+    clickActionId: rest-static-payload
+    actions:
+      rest:
+        - id: rest-static-payload
+          type: rest
+          resourceRefId: create-pod
+          headers:
+            - "Content-Type: application/json"
+          payload:
+            apiVersion: "v1"
+            kind: "Pod"
+            metadata:
+              name: "my-sample-nginx-pod"
+              labels:
+                app: "my-sample-nginx"
+            spec:
+              containers:
+                - name: "nginx"
+                  image: "nginx:latest"
+                  ports:
+                    - containerPort: 80
+  resourcesRefs:
+    items:
+      - id: create-pod
+        apiVersion: v1
+        resource: pods
+        name: my-sample-nginx-pod
+        namespace: krateo-system
+        verb: POST
+---
+# rest - Merged payload with resource payload
+# Target: action payload is merged with the referenced resource payload.
+# Expected behavior: resulting payload contains all fields from both action and resource; action payload values override resource payload in case of conflict.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-rest-merged-payload
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Submit
+    clickActionId: rest-merged-payload
+    actions:
+      rest:
+        - id: rest-merged-payload
+          type: rest
+          resourceRefId: create-pod
+          headers:
+            - "Content-Type: application/json"
+          payload:
+            apiVersion: v1
+            kind: "Pod"
+            metadata:
+              name: "my-sample-nginx-pod"
+              labels:
+                app: "my-sample-nginx"
+            spec:
+              containers:
+                - name: "nginx"
+                  image: "nginx:latest"
+                  ports:
+                    - containerPort: 80
+  resourcesRefs:
+    items:
+      - id: create-pod
+        apiVersion: v1
+        resource: pods
+        name: different-name
+        namespace: krateo-system
+        verb: POST
+---
+# rest - Payload overrides with static values (not applied)
+# Target: payloadToOverride specifies fields and static values to replace in the merged payload.
+# Expected behavior: specified fields in payloadToOverride are not applied after merge since
+# it does not make sense for Button to define a custom payload as a Form would do
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-rest-payload-overrides-static
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Submit
+    clickActionId: rest-overrides-static
+    actions:
+      rest:
+        - id: rest-overrides-static
+          type: rest
+          resourceRefId: create-pod
+          headers:
+            - "Content-Type: application/json"
+          payload:
+            apiVersion: "v1"
+            kind: "Pod"
+            metadata:
+              name: "my-sample-nginx-pod"
+              labels:
+                app: "my-sample-nginx"
+            spec:
+              containers:
+                - name: "nginx"
+                  image: "nginx:latest"
+                  ports:
+                    - containerPort: 80
+          payloadToOverride:
+            - name: apiVersion
+              value: v2
+            - name: metadata.name
+              value: overriden-name
+  resourcesRefs:
+    items:
+      - id: create-pod
+        apiVersion: v1
+        resource: pods
+        name: create-pod
+        namespace: krateo-system
+        verb: POST
+---
+# rest - Payload overrides with JQ expression (not applied)
+# Target: payloadToOverride values are JQ expressions referencing the customPayload.
+# Expected behavior: specified fields in payloadToOverride are not applied after merge since
+# it does not make sense for Button to define a custom payload as a Form would do
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-rest-payload-overrides-jq
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Submit
+    clickActionId: rest-overrides-jq
+    actions:
+      rest:
+        - id: rest-overrides-jq
+          type: rest
+          resourceRefId: create-pod
+          headers:
+            - "Content-Type: application/json"
+          payload:
+            apiVersion: "v1"
+            kind: "Pod"
+            metadata:
+              name: "my-sample-nginx-pod"
+              labels:
+                app: "my-sample-nginx"
+            spec:
+              containers:
+                - name: "nginx"
+                  image: "nginx:latest"
+                  ports:
+                    - containerPort: 80
+          payloadToOverride:
+            - name: apiVersion
+              value: ${ .json.apiVersion }
+  resourcesRefs:
+    items:
+      - id: create-pod
+        apiVersion: v1
+        resource: pods
+        name: create-pod
+        namespace: krateo-system
+        verb: POST
+---
+# rest - Customized success message
+# Target: correct request -> successMessage is displayed
+# Expected behavior: after the request succeeds a customized success message is displayed
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-rest-success-message
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Submit
+    clickActionId: rest-success-message
+    actions:
+      rest:
+        - id: rest-success-message
+          type: rest
+          resourceRefId: create-pod
+          successMessage: 'This is a customized message: successful request!'
+          headers:
+            - "Content-Type: application/json"
+          payload:
+            apiVersion: "v1"
+            kind: "Pod"
+            metadata:
+              name: "success-message-pod"
+              labels:
+                app: "my-sample-nginx"
+            spec:
+              containers:
+                - name: "nginx"
+                  image: "nginx:latest"
+                  ports:
+                    - containerPort: 80
+  resourcesRefs:
+    items:
+      - id: create-pod
+        apiVersion: v1
+        resource: pods
+        name: success-message-pod
+        namespace: krateo-system
+        verb: POST
+---
+# rest - Customized success message with JQ expression
+# Target: correct request -> successMessage with JQ expression is displayed
+# Expected behavior: after the request succeeds a customized success message is displayed
+# The message interpolates a variable using JQ
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-rest-success-message-jq
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Submit
+    clickActionId: rest-success-message-jq
+    actions:
+      rest:
+        - id: rest-success-message-jq
+          type: rest
+          resourceRefId: create-pod
+          successMessage: '${ "Success on resource: " + .json.metadata.name }'
+          headers:
+            - "Content-Type: application/json"
+          payload:
+            apiVersion: "v1"
+            kind: "Pod"
+            metadata:
+              name: "success-message-jq-pod"
+              labels:
+                app: "my-sample-nginx"
+            spec:
+              containers:
+                - name: "nginx"
+                  image: "nginx:latest"
+                  ports:
+                    - containerPort: 80
+  resourcesRefs:
+    items:
+      - id: create-pod
+        apiVersion: v1
+        resource: pods
+        name: success-message-jq-pod
+        namespace: krateo-system
+        verb: POST
+---
+### rest - Customized error message
+# Target: malformed request -> errorMessage is displayed
+# Expected behavior: after the request fails a customized error message is displayed
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-rest-error-message
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Submit
+    clickActionId: rest-error-message
+    actions:
+      rest:
+      - id: rest-error-message
+        type: rest
+        resourceRefId: get-default-ns
+        errorMessage: 'This is a customized message: malformed request'
+        headers:
+        - 'Accept: application/json'  
+  resourcesRefs:
+    items:
+      - id: get-default-ns
+        apiVersion: v1
+        resource: namespaces
+        name: default
+        verb: GET
+---
+### rest - Customized error message with JQ expression
+# Target: malformed request -> errorMessage with JQ expression is displayed
+# Expected behavior: after the request fails a customized error message is displayed
+# The message interpolates a variable using JQ
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-rest-error-message-jq
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Submit
+    clickActionId: rest-error-message-jq
+    actions:
+      rest:
+      - id: rest-error-message-jq
+        type: rest
+        resourceRefId: get-default-ns
+        errorMessage: '${"Error while executing action on resource: " + .response.message }'
+        headers:
+        - 'Accept: application/json'  
+  resourcesRefs:
+    items:
+      - id: get-default-ns
+        apiVersion: v1
+        resource: namespaces
+        name: default
+        verb: GET
+---
+### rest - Navigation on success
+### Target: correct request -> redirect to another page (onSuccessNavigateTo)
+### Expected behaviour: after the request is successfully executed, there is a redirect to a specified page
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-rest-success-redirect
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Execute and navigate
+    clickActionId: rest-success-redirect
+    actions:
+      rest:
+        - id: rest-success-redirect
+          type: rest
+          resourceRefId: create-pod
+          onSuccessNavigateTo: /barchart
+          headers:
+            - "Content-Type: application/json"
+          payload:
+            apiVersion: "v1"
+            kind: "Pod"
+            metadata:
+              name: "my-sample-nginx-pod-redirect"
+              labels:
+                app: "my-sample-nginx"
+            spec:
+              containers:
+                - name: "nginx"
+                  image: "nginx:latest"
+                  ports:
+                    - containerPort: 80
+  resourcesRefs:
+    items:
+      - id: create-pod
+        apiVersion: v1
+        resource: pods
+        name: my-sample-nginx-pod-redirect
+        namespace: krateo-system
+        verb: POST
+---
+### rest - Navigation on success with dynamic URL via JQ expression
+### Target: correct request -> redirect to another page (onSuccessNavigateTo) -> URL is specified by JQ expression
+### Expected behaviour: after the request is successfully executed, there is a redirect to a specified page
+### The URL is fetched by interpolating a JQ expression.
+### In this case we expect 404 since we are redirecting to a non existent page.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-rest-success-redirect-jq
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Execute and navigate
+    clickActionId: rest-success-redirect-jq
+    actions:
+      rest:
+        - id: rest-success-redirect-jq
+          type: rest
+          resourceRefId: create-pod
+          onSuccessNavigateTo: ${ .json.metadata.name }
+          headers:
+            - "Content-Type: application/json"
+          payload:
+            apiVersion: "v1"
+            kind: "Pod"
+            metadata:
+              name: "my-sample-nginx-pod-redirect-jq"
+              labels:
+                app: "my-sample-nginx"
+            spec:
+              containers:
+                - name: "nginx"
+                  image: "nginx:latest"
+                  ports:
+                    - containerPort: 80
+  resourcesRefs:
+    items:
+      - id: create-pod
+        apiVersion: v1
+        resource: pods
+        name: my-sample-nginx-pod-redirect-jq
+        namespace: krateo-system
+        verb: POST
+---
+### rest - Navigation on event received (fail)
+### Target: correct request -> loading message -> error after timeout
+### Expected behaviour: after the request is successfully executed, a loading message is displayed
+### Timeout occurs since the specific event will not arrive.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-rest-event-navigation-fail
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Wait for event
+    clickActionId: rest-event-navigation-fail
+    actions:
+      rest:
+        - id: rest-event-navigation-fail
+          type: rest
+          resourceRefId: create-pod
+          onEventNavigateTo:
+            eventReason: ConfigUpdated
+            url: "/barchart"
+            timeout: 30
+            loadingMessage: "Waiting for the update event to fail..."
+          headers:
+            - "Content-Type: application/json"
+          payload:
+            apiVersion: "v1"
+            kind: "Pod"
+            metadata:
+              name: "my-sample-nginx-pod-event-navigation-fail"
+              labels:
+                app: "my-sample-nginx"
+            spec:
+              containers:
+                - name: "nginx"
+                  image: "nginx:latest"
+                  ports:
+                    - containerPort: 80
+  resourcesRefs:
+    items:
+      - id: create-pod
+        apiVersion: v1
+        resource: pods
+        name: my-sample-nginx-pod-event-navigation
+        namespace: krateo-system
+        verb: POST
+---
+### rest - Navigation on event received (success)
+### Target: correct request -> redirect to another page after (onEventNavigateTo)
+### Expected behaviour: after the request is successfully executed, there is a redirect to a specified page
+### Navigation is executed once a specified event is received.
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-button-rest-event-navigation-success
+  namespace: krateo-system
+spec:
+  widgetData:
+    label: Wait for event
+    clickActionId: rest-event-navigation-success
+    actions:
+      rest:
+        - id: rest-event-navigation-success
+          type: rest
+          resourceRefId: create-pod
+          onEventNavigateTo:
+            eventReason: Started
+            url: "/barchart"
+            timeout: 30
+            loadingMessage: "Waiting for the update event..."
+          headers:
+            - "Content-Type: application/json"
+          payload:
+            apiVersion: "v1"
+            kind: "Pod"
+            metadata:
+              name: "my-sample-nginx-pod-event-navigation-success"
+              labels:
+                app: "my-sample-nginx"
+            spec:
+              containers:
+                - name: "nginx"
+                  image: "nginx:latest"
+                  ports:
+                    - containerPort: 80
+  resourcesRefs:
+    items:
+      - id: create-pod
+        apiVersion: v1
+        resource: pods
+        name: my-sample-nginx-pod-event-navigation-success
+        namespace: krateo-system
+        verb: POST

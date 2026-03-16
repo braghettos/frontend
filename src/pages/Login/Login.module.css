@@ -1,0 +1,52 @@
+.login {
+  background-image: linear-gradient(var(--menubgstart-color), var(--menubgend-color));
+  box-sizing: border-box;
+  display: flex;
+  height: 100%;
+  min-height: 100vh;
+  min-width: 100vw;
+  padding: var(--spacing-lg);
+  width: 100%;
+
+  .aside {
+    align-items: center;
+    display: flex;
+    flex: 1;
+    justify-content: center;
+  
+    .image {
+      width: 30vw;
+    }
+  }
+
+  .section {
+    align-items: center;
+    display: flex;
+    flex: 1;
+    justify-content: center;
+
+    .card {
+      align-items: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      width: 30vw;
+
+      .body {
+        width: 100%;
+      }
+
+      .header {
+        border-bottom: none;
+        padding: var(--spacing-lg);
+      }
+
+      .title {
+        align-items: center;
+        display: flex;
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-lighter);
+      }
+    }
+  }
+}

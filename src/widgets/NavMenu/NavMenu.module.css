@@ -1,0 +1,56 @@
+.menu {
+  background-color: transparent;
+  border: 0 !important;
+
+  :global(.ant-menu.ant-menu-root.ant-menu-inline) {
+    border-inline-end: 0;
+  }
+
+  :global(.ant-menu-item-icon) {
+    display: none;
+    justify-content: center;
+    width: 34px;
+  }
+
+  :global(.ant-menu-item) {
+    color: var(--menuitem-color);
+    height: auto;
+    margin: 0;
+    padding-bottom: 10px;
+    padding-left: 0;
+    padding-top: 10px;
+    text-transform: capitalize;
+    width: 100%;
+
+    svg {
+      min-height: 22px;
+      min-width: 22px;
+      opacity: .5;
+      transition: all 300ms;
+    }
+  }
+
+  :global(.ant-menu-item-selected) {
+    background-color: var(--menuitembg-color);
+    border-radius: 0;
+    color: var(--light-color);
+
+    svg {
+      opacity: 1;
+      
+      path {
+        fill: var(--light-color);
+      }  
+    }
+  }
+
+  :global(.ant-menu-item.ant-menu-item-active),
+  :global(.ant-menu-item.ant-menu-item-active:hover) {
+    background-color: transparent;
+    color: var(--light-color) !important;
+
+    svg {
+      opacity: 1;
+    }
+  }
+}

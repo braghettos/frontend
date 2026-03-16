@@ -1,0 +1,26 @@
+@import url('./src/theme/variables.css');
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  padding: 0;
+  width: 100%;
+}
+
+body {
+  background-color: var(--background-color);
+  font-family: Roboto, sans-serif;
+}
+
+*::-webkit-scrollbar {
+  width: 3px;
+}
+
+*::-webkit-scrollbar-track {
+  display: none;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #ccc;
+}

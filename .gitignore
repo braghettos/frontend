@@ -1,0 +1,40 @@
+# Node.js dependencies
+node_modules/
+.yarn/
+.pnp.*
+
+# Build output
+dist/
+build/
+public/
+
+# Editor & IDEs
+.vscode/
+.idea/
+*.swp
+
+# Logs & Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store
+
+# Misc
+.eslintcache
+.prettierrc
+playwright-report/
+coverage/
+
+kubeconfig.yaml
+
+scripts/login-response*.json
+scripts/credentials*.json
+*kubeconfig*
+
+scratchpad.md
+
+scripts/krateoctl-output/*.yaml
+
+.env
+.env.local

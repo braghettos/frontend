@@ -1,0 +1,4 @@
+.paragraph {
+  font-size: var(--font-size-sm);
+  white-space: pre-line;
+}

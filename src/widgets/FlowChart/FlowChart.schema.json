@@ -1,0 +1,261 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v1beta1"
+    },
+    "kind": {
+      "default": "FlowChart",
+      "description": "FlowChart represents a Kubernetes composition as a directed graph. Each node represents a resource, and edges indicate parent-child relationships",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "required": ["title", "items"],
+          "properties": {
+            "data": {
+              "type": "array",
+              "description": "list of kubernetes resources and their relationships to render as nodes in the flow chart",
+              "items": {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "date",
+                  "name",
+                  "namespace",
+                  "resourceVersion",
+                  "uid",
+                  "version"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "description": "optional date value to be shown in the node, formatted as ISO 8601 string"
+                  },
+                  "icon": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "description": "custom icon displayed for the resource node",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "description": "FontAwesome icon class name (e.g. 'fa-check')"
+                      },
+                      "color": {
+                        "type": "string",
+                        "description": "CSS color value for the icon background",
+                        "enum": [
+                          "blue",
+                          "darkBlue",
+                          "orange",
+                          "gray",
+                          "red",
+                          "green",
+                          "violet"
+                        ]
+                      },
+                      "message": {
+                        "type": "string",
+                        "description": "optional tooltip message displayed on hover"
+                      }
+                    }
+                  },
+                  "statusIcon": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "description": "custom status icon displayed alongside resource info",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "description": "FontAwesome icon class name representing status"
+                      },
+                      "color": {
+                        "type": "string",
+                        "description": "CSS color value for the status icon background",
+                        "enum": [
+                          "blue",
+                          "darkBlue",
+                          "orange",
+                          "gray",
+                          "red",
+                          "green",
+                          "violet"
+                        ]
+                      },
+                      "message": {
+                        "type": "string",
+                        "description": "optional tooltip message describing the status"
+                      }
+                    }
+                  },
+                  "kind": {
+                    "type": "string",
+                    "description": "kubernetes resource type (e.g. Deployment, Service)"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "name of the resource"
+                  },
+                  "namespace": {
+                    "type": "string",
+                    "description": "namespace in which the resource is defined"
+                  },
+                  "parentRefs": {
+                    "type": "array",
+                    "description": "list of parent resources used to define graph relationships",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "date": {
+                          "type": "string",
+                          "description": "optional date value to be shown in the node, formatted as ISO 8601 string"
+                        },
+                        "icon": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "description": "custom icon for the parent resource",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "description": "FontAwesome icon class name"
+                            },
+                            "color": {
+                              "type": "string",
+                              "description": "CSS color value for the icon background",
+                              "enum": [
+                                "blue",
+                                "darkBlue",
+                                "orange",
+                                "gray",
+                                "red",
+                                "green",
+                                "violet"
+                              ]
+                            },
+                            "message": {
+                              "type": "string",
+                              "description": "optional tooltip message"
+                            }
+                          }
+                        },
+                        "statusIcon": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "description": "custom status icon for the parent resource",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "description": "FontAwesome icon class name"
+                            },
+                            "color": {
+                              "type": "string",
+                              "description": "CSS color value for the status icon background",
+                              "enum": [
+                                "blue",
+                                "darkBlue",
+                                "orange",
+                                "gray",
+                                "red",
+                                "green",
+                                "violet"
+                              ]
+                            },
+                            "message": {
+                              "type": "string",
+                              "description": "optional tooltip message"
+                            }
+                          }
+                        },
+                        "kind": {
+                          "type": "string",
+                          "description": "resource type of the parent"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "name of the parent resource"
+                        },
+                        "namespace": {
+                          "type": "string",
+                          "description": "namespace of the parent resource"
+                        },
+                        "parentRefs": {
+                          "type": "array",
+                          "description": "nested parent references for recursive relationships",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "resourceVersion": {
+                          "type": "string",
+                          "description": "internal version string of the parent resource"
+                        },
+                        "uid": {
+                          "type": "string",
+                          "description": "unique identifier of the parent resource"
+                        },
+                        "version": {
+                          "type": "string",
+                          "description": "api version of the parent resource"
+                        }
+                      }
+                    }
+                  },
+                  "resourceVersion": {
+                    "type": "string",
+                    "description": "internal version string of the resource"
+                  },
+                  "uid": {
+                    "type": "string",
+                    "description": "unique identifier of the resource"
+                  },
+                  "version": {
+                    "type": "string",
+                    "description": "api version of the resource"
+                  }
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": {
+                "type": "string"
+              },
+              "expression": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["widgetData"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}

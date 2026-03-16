@@ -1,0 +1,110 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v1beta1"
+    },
+    "kind": {
+      "default": "PieChart",
+      "description": "PieChart is a visual component used to display categorical data as segments of a pie chart",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "required": ["title"],
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "title displayed above the chart"
+            },
+            "description": {
+              "type": "string",
+              "description": "supplementary text displayed below or near the title"
+            },
+            "series": {
+              "type": "object",
+              "description": "data to be visualized in the pie chart",
+              "required": ["total", "data"],
+              "properties": {
+                "total": {
+                  "type": "integer",
+                  "description": "sum of all data values, used to calculate segment sizes"
+                },
+                "data": {
+                  "type": "array",
+                  "description": "individual segments of the pie chart",
+                  "items": {
+                    "type": "object",
+                    "required": ["color", "value", "label"],
+                    "properties": {
+                      "color": {
+                        "type": "string",
+                        "enum": [
+                          "blue",
+                          "darkBlue",
+                          "orange",
+                          "gray",
+                          "red",
+                          "green",
+                          "violet"
+                        ],
+                        "description": "color used to represent the segment"
+                      },
+                      "value": {
+                        "type": "integer",
+                        "description": "numeric value for the segment"
+                      },
+                      "label": {
+                        "type": "string",
+                        "description": "label for the segment"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": {
+                "type": "string"
+              },
+              "expression": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["widgetData"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}

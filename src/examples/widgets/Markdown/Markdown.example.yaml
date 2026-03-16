@@ -1,0 +1,158 @@
+# Empty markdown
+# Target: rendering fallback UI when no markdown content is provided.
+# Expected behavior: renders an empty block — no text or actions shown.
+kind: Markdown
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-markdown-empty
+  namespace: krateo-system
+spec:
+  widgetData:
+    markdown: ""
+---
+# Basic markdown formatting
+# Target: verify rendering of headings, lists, links, and code blocks.
+# Expected behavior: correctly styles H1, bold/italic, lists, and inline code.
+kind: Markdown
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-markdown-basic
+  namespace: krateo-system
+spec:
+  widgetData:
+    markdown: |
+      # cloudnative-stack
+      A Cloud Native Stack based on Frontend / Backend / Kafka / Hazelcast / MongoDB / CloudNativePG
+
+      ## Overview
+
+      This Krateo blueprint deploys a complex, multi-tier application stack on Kubernetes. It is designed to be highly configurable and relies on best-practice Kubernetes operators for managing stateful components like databases and message queues.
+
+      The blueprint will provision the following components:
+
+      - A **Frontend** pod (e.g., Nginx) to serve a user interface.
+      - A **Backend** pod (e.g., Spring Boot) for business logic.
+      - A **Kafka Topic** managed by the Strimzi operator.
+      - A **Hazelcast** in-memory data grid cluster managed by the Hazelcast Platform Operator.
+      - A **MongoDB** replica set managed by the MongoDB Community Kubernetes Operator.
+      - A **PostgreSQL** cluster managed by the CloudNative-PG operator.
+
+      ## Requirements
+
+      For this blueprint to function correctly, your Kubernetes cluster **must** have the following operators installed and running. Please follow their official documentation for installation instructions.
+
+      1. **Strimzi (for Kafka):**
+         - **Purpose:** Manages Kafka clusters and topics.
+         - **Installation Guide:** [Strimzi Deployment Documentation](https://strimzi.io/docs/operators/latest/deploying)
+
+      2. **Hazelcast Platform Operator:**
+         - **Purpose:** Manages Hazelcast in-memory computing clusters.
+         - **Installation Guide:** [Hazelcast Operator Deployment](https://docs.hazelcast.com/operator/5.14/)
+
+      3. **MongoDB Kubernetes Operator:**
+         - **Purpose:** Manages MongoDB Community replica sets and clusters.
+         - **Installation Guide:** [https://github.com/mongodb/mongodb-kubernetes](https://github.com/mongodb/mongodb-kubernetes)
+
+      4. **CloudNative-PG (for PostgreSQL):**
+         - **Purpose:** Manages the full lifecycle of a PostgreSQL cluster.
+         - **Installation Guide:** [CloudNative-PG Installation](https://cloudnative-pg.io/documentation/1.27/)
+---
+# Allow copy enabled
+# Target: verify clipboard functionality.
+# Expected behavior: displays a copy button; clicking it copies the markdown text.
+kind: Markdown
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-markdown-copy
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowCopy: true
+    markdown: |
+      ## Copy example
+      Questo testo può essere copiato negli appunti.
+---
+# Allow download enabled
+# Target: verify download button functionality.
+# Expected behavior: displays a download button; clicking it downloads the markdown as a `.txt` file.
+kind: Markdown
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-markdown-download
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowDownload: true
+    markdown: |
+      ## Download example
+      Questo testo sarà scaricato in un file di testo.
+---
+# Custom file extension for download
+# Target: verify correct handling of custom download extensions.
+# Expected behavior: clicking the download button saves the file as `file.md`.
+kind: Markdown
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-markdown-download-md
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowDownload: true
+    downloadFileExtension: md
+    markdown: |
+      ## Custom extension example
+      File scaricato come `file.md`
+---
+# Combined actions (copy + download)
+# Target: verify rendering of both buttons together.
+# Expected behavior: shows both copy and download icons; both actions functional.
+kind: Markdown
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-markdown-combined
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowCopy: true
+    allowDownload: true
+    downloadFileExtension: md
+    markdown: |
+      ## Markdown completo
+      Questo è un esempio con **entrambe** le azioni abilitate:
+      - Copia negli appunti
+      - Scarica file `.md`
+
+      ```bash
+      echo "Krateo Markdown Widget"
+      ```
+---
+# Long content markdown
+# Target: test rendering performance and scroll handling.
+# Expected behavior: correctly scrolls long content and maintains styles.
+kind: Markdown
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-markdown-long
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowCopy: true
+    allowDownload: true
+    markdown: |
+      # Documentazione di esempio
+      Questo è un testo lungo per verificare la gestione dello scroll nel componente.
+
+      ## Sezione 1
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero.
+
+      ## Sezione 2
+      Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet.
+
+      ## Sezione 3
+      Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta.
+
+      ## Sezione 4
+      Mauris massa. Vestibulum lacinia arcu eget nulla. Class aptent taciti sociosqu ad litora torquent per conubia nostra.
+
+      ---
+      Fine documento.

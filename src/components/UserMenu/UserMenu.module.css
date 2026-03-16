@@ -1,0 +1,67 @@
+.popover {
+  cursor: pointer;
+}
+
+.panel {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  max-width: 300px;
+  min-width: 200px;
+  padding: 0;
+  
+  .menu {
+    border: none !important; 
+    margin: 0;
+    max-width: inherit;
+    min-width: inherit;
+    padding: 0;
+    width: 100%;
+
+    :global(.ant-menu-item) {
+      margin: 0;
+      width: 100%;
+    }
+  }
+
+  .userData {
+    align-items: center;
+    background-color: var(--background-color);
+    border-radius: var(--spacing-md);
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    max-width: inherit;
+    min-width: inherit;
+    padding: var(--spacing-md);
+
+    .initials {
+      font-size: var(--font-size-lg);
+    }
+
+    .details {
+      align-items: center;
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+
+      .fullname {
+        font-size: var(--font-size-md);
+        font-weight: var(--font-weight-bold);
+        text-align: center;
+      }
+
+      .role {
+        font-weight: var(--font-weight-light);
+        text-transform: uppercase;
+      }
+
+      .groups {
+        color: var(--gray-color);
+        text-align: center;
+      }
+    }
+  }
+}

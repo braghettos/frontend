@@ -1,0 +1,114 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v1beta1"
+    },
+    "kind": {
+      "default": "LineChart",
+      "description": "LineChart displays a customizable line chart based on time series or numerical data. It supports multiple lines with colored coordinates and axis labels, typically used to visualize metrics from Kubernetes resources",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "description": "data used to render the chart including lines and axis labels",
+          "properties": {
+            "lines": {
+              "type": "array",
+              "description": "list of data series to be rendered as individual lines",
+              "items": {
+                "type": "object",
+                "description": "configuration for a single line in the chart",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "label of the line displayed in the legend"
+                  },
+                  "color": {
+                    "type": "string",
+                    "enum": [
+                      "blue",
+                      "darkBlue",
+                      "orange",
+                      "gray",
+                      "red",
+                      "green",
+                      "violet"
+                    ],
+                    "description": "color used to render the line"
+                  },
+                  "coords": {
+                    "type": "array",
+                    "description": "data points that define the line",
+                    "items": {
+                      "type": "object",
+                      "required": ["xAxis", "yAxis"],
+                      "properties": {
+                        "xAxis": {
+                          "type": "string",
+                          "description": "value on the x axis"
+                        },
+                        "yAxis": {
+                          "type": "string",
+                          "description": "value on the y axis"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "xAxisName": {
+              "type": "string",
+              "description": "label for the x axis"
+            },
+            "yAxisName": {
+              "type": "string",
+              "description": "label for the y axis"
+            }
+          },
+          "required": ["lines"],
+          "additionalProperties": false
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": ["name", "namespace"],
+          "additionalProperties": false
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": {
+                "type": "string"
+              },
+              "expression": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["widgetData"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}

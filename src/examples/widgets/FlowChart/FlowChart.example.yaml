@@ -1,0 +1,418 @@
+# Empty nodes and edges
+# Target: rendering fallback UI when no data is provided.
+# Expected behavior: displays <Empty /> component with simple placeholder.
+kind: FlowChart
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-flowchart-empty
+  namespace: krateo-system
+spec:
+  widgetData:
+    data: []
+---
+# Node with missing parent reference
+# Target: ensure component safely handles edges pointing to non-existent parents.
+# Expected behavior: since the child node exists in data, it is rendered as a standalone (disconnected) node.
+# Notes: <Empty /> is NOT shown because parsedNodes.length > 0; only invalid edges are ignored.
+kind: FlowChart
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-flowchart-empty-nodes
+  namespace: krateo-system
+spec:
+  widgetData:
+    data:
+      # This node references a missing parent, creating a broken edge link.
+      - parentRefs:
+          - uid: "missing-parent"
+        uid: "missing-child"
+        kind: "Isolated"
+        name: "node-a"
+        namespace: "default"
+        resourceVersion: "1"
+        date: "2025-07-10T10:00:00Z"
+        version: "v1"
+---
+# Nodes without edges
+# Target: isolated nodes with no relationships.
+# Expected behavior: nodes render in a grid layout, no connecting lines shown.
+kind: FlowChart
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-flowchart-no-edges
+  namespace: krateo-system
+spec:
+  widgetData:
+    data:
+      - date: "2025-07-10T10:00:00Z"
+        icon:
+          name: "fa-cube"
+          color: "blue"
+        statusIcon:
+          name: "fa-check"
+          color: "green"
+          message: "Ready"
+        kind: "Isolated"
+        name: "node-a"
+        namespace: "default"
+        uid: "node-a"
+        version: "v1"
+        resourceVersion: "1"
+      - date: "2025-07-10T11:00:00Z"
+        icon:
+          name: "fa-cog"
+          color: "orange"
+        statusIcon:
+          name: "fa-pause"
+          color: "gray"
+          message: "Idle"
+        kind: "Isolated"
+        name: "node-b"
+        namespace: "default"
+        uid: "node-b"
+        version: "v1"
+        resourceVersion: "1"
+---
+# Basic flow
+# Target: simple graph with one parent and two children.
+# Expected behavior: renders three nodes with correct directional layout and status colors.
+kind: FlowChart
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-flowchart-basic
+  namespace: krateo-system
+spec:
+  widgetData:
+    data:
+      - date: "2025-07-20T10:00:00Z"
+        icon:
+          name: "fa-cube"
+          color: "blue"
+        statusIcon:
+          name: "fa-check"
+          color: "green"
+          message: "Ready"
+        kind: "Root"
+        name: "root-node"
+        namespace: "default"
+        uid: "root-001"
+        version: "v1"
+        resourceVersion: "1"
+      - date: "2025-07-21T10:00:00Z"
+        icon:
+          name: "fa-cogs"
+          color: "orange"
+        statusIcon:
+          name: "fa-hourglass"
+          color: "blue"
+          message: "Pending"
+        kind: "Service"
+        name: "child-1"
+        namespace: "default"
+        parentRefs:
+          - uid: "root-001"
+        uid: "child-001"
+        version: "v1"
+        resourceVersion: "1"
+      - date: "2025-07-22T10:00:00Z"
+        icon:
+          name: "fa-database"
+          color: "violet"
+        statusIcon:
+          name: "fa-xmark"
+          color: "red"
+          message: "Error"
+        kind: "Database"
+        name: "child-2"
+        namespace: "default"
+        parentRefs:
+          - uid: "root-001"
+        uid: "child-002"
+        version: "v1"
+        resourceVersion: "1"
+---
+# Deep hierarchy
+# Target: multi-level parent-child relationships with 4 depth levels.
+# Expected behavior: graph auto-layouts vertically, all edges rendered correctly.
+kind: FlowChart
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-flowchart-hierarchy
+  namespace: krateo-system
+spec:
+  widgetData:
+    data:
+      - date: "2025-07-10T08:00:00Z"
+        icon:
+          name: "fa-sitemap"
+          color: "gray"
+        statusIcon:
+          name: "fa-check"
+          color: "green"
+          message: "Active"
+        kind: "Root"
+        name: "root"
+        namespace: "infra"
+        uid: "root-100"
+        version: "v1"
+        resourceVersion: "1"
+      - date: "2025-07-11T09:00:00Z"
+        icon:
+          name: "fa-server"
+          color: "blue"
+        statusIcon:
+          name: "fa-circle"
+          color: "orange"
+          message: "In Progress"
+        kind: "Backend"
+        name: "svc-a"
+        namespace: "infra"
+        parentRefs:
+          - uid: "root-100"
+        uid: "svc-101"
+        version: "v1"
+        resourceVersion: "1"
+      - date: "2025-07-12T09:30:00Z"
+        icon:
+          name: "fa-cog"
+          color: "orange"
+        statusIcon:
+          name: "fa-pause"
+          color: "gray"
+          message: "Paused"
+        kind: "Module"
+        name: "mod-1"
+        namespace: "infra"
+        parentRefs:
+          - uid: "svc-101"
+        uid: "mod-102"
+        version: "v1"
+        resourceVersion: "1"
+      - date: "2025-07-13T09:45:00Z"
+        icon:
+          name: "fa-code"
+          color: "red"
+        statusIcon:
+          name: "fa-exclamation"
+          color: "red"
+          message: "Error"
+        kind: "Component"
+        name: "comp-1"
+        namespace: "infra"
+        parentRefs:
+          - uid: "mod-102"
+        uid: "comp-103"
+        version: "v1"
+        resourceVersion: "1"
+---
+# Cross-namespace links
+# Target: parent-child relationships across namespaces.
+# Expected behavior: node labels show namespaces correctly and edges still connect.
+kind: FlowChart
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-flowchart-cross-ns
+  namespace: krateo-system
+spec:
+  widgetData:
+    data:
+      - date: "2025-06-01T10:00:00Z"
+        icon:
+          name: "fa-network-wired"
+          color: "blue"
+        statusIcon:
+          name: "fa-check"
+          color: "green"
+          message: "Running"
+        kind: "Network"
+        name: "net-core"
+        namespace: "core"
+        uid: "net-001"
+        version: "v1"
+        resourceVersion: "1"
+      - date: "2025-06-01T10:10:00Z"
+        icon:
+          name: "fa-plug"
+          color: "orange"
+        statusIcon:
+          name: "fa-sync"
+          color: "blue"
+          message: "Syncing"
+        kind: "Connector"
+        name: "net-adapter"
+        namespace: "edge"
+        parentRefs:
+          - uid: "net-001"
+        uid: "plug-001"
+        version: "v1"
+        resourceVersion: "1"
+---
+# Mixed statuses
+# Target: testing all status colors and tooltip messages.
+# Expected behavior: icons show proper colors and tooltips display correctly.
+kind: FlowChart
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-flowchart-status-mix
+  namespace: krateo-system
+spec:
+  widgetData:
+    data:
+      - date: "2025-05-15T09:00:00Z"
+        icon:
+          name: "fa-cubes"
+          color: "blue"
+        statusIcon:
+          name: "fa-check"
+          color: "green"
+          message: "Available"
+        kind: "Deployment"
+        name: "deploy-a"
+        namespace: "prod"
+        uid: "dep-a"
+        version: "v1"
+        resourceVersion: "1"
+      - date: "2025-05-16T10:00:00Z"
+        icon:
+          name: "fa-database"
+          color: "violet"
+        statusIcon:
+          name: "fa-xmark"
+          color: "red"
+          message: "Degraded"
+        kind: "Database"
+        name: "db-a"
+        namespace: "prod"
+        parentRefs:
+          - uid: "dep-a"
+        uid: "db-a"
+        version: "v1"
+        resourceVersion: "1"
+      - date: "2025-05-17T11:00:00Z"
+        icon:
+          name: "fa-file-alt"
+          color: "orange"
+        statusIcon:
+          name: "fa-ellipsis"
+          color: "blue"
+          message: "Progressing"
+        kind: "ConfigMap"
+        name: "cfg-a"
+        namespace: "prod"
+        parentRefs:
+          - uid: "dep-a"
+        uid: "cfg-a"
+        version: "v1"
+        resourceVersion: "1"
+---
+# Missing parents
+# Target: nodes without valid parentRefs.
+# Expected behavior: orphans should render independently at top-level.
+kind: FlowChart
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-flowchart-orphans
+  namespace: krateo-system
+spec:
+  widgetData:
+    data:
+      - date: "2025-07-01T08:00:00Z"
+        icon:
+          name: "fa-cloud"
+          color: "gray"
+        statusIcon:
+          name: "fa-question"
+          color: "gray"
+          message: "Unknown"
+        kind: "Service"
+        name: "srv-x"
+        namespace: "misc"
+        uid: "srv-x"
+        version: "v1"
+        resourceVersion: "1"
+      - date: "2025-07-02T08:00:00Z"
+        icon:
+          name: "fa-code-branch"
+          color: "violet"
+        statusIcon:
+          name: "fa-pause"
+          color: "orange"
+          message: "Suspended"
+        kind: "Repo"
+        name: "repo-x"
+        namespace: "misc"
+        uid: "repo-x"
+        version: "v1"
+        resourceVersion: "1"
+---
+# Multiple roots
+# Target: rendering two independent graphs in one chart.
+# Expected behavior: both trees appear disconnected with correct auto-layout.
+kind: FlowChart
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-flowchart-multi-root
+  namespace: krateo-system
+spec:
+  widgetData:
+    data:
+      - date: "2025-04-01T09:00:00Z"
+        icon:
+          name: "fa-server"
+          color: "blue"
+        statusIcon:
+          name: "fa-check"
+          color: "green"
+          message: "Running"
+        kind: "Cluster"
+        name: "cluster-a"
+        namespace: "ops"
+        uid: "cluster-a"
+        version: "v1"
+        resourceVersion: "1"
+      - date: "2025-04-01T09:05:00Z"
+        icon:
+          name: "fa-cog"
+          color: "orange"
+        statusIcon:
+          name: "fa-exclamation"
+          color: "red"
+          message: "Error"
+        kind: "Service"
+        name: "svc-a"
+        namespace: "ops"
+        parentRefs:
+          - uid: "cluster-a"
+        uid: "svc-a"
+        version: "v1"
+        resourceVersion: "1"
+      - date: "2025-04-02T09:00:00Z"
+        icon:
+          name: "fa-database"
+          color: "green"
+        statusIcon:
+          name: "fa-circle"
+          color: "blue"
+          message: "Syncing"
+        kind: "Cluster"
+        name: "cluster-b"
+        namespace: "ops"
+        uid: "cluster-b"
+        version: "v1"
+        resourceVersion: "1"
+      - date: "2025-04-02T09:10:00Z"
+        icon:
+          name: "fa-plug"
+          color: "violet"
+        statusIcon:
+          name: "fa-check"
+          color: "green"
+          message: "Ready"
+        kind: "Service"
+        name: "svc-b"
+        namespace: "ops"
+        parentRefs:
+          - uid: "cluster-b"
+        uid: "svc-b"
+        version: "v1"
+        resourceVersion: "1"

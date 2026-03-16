@@ -1,0 +1,105 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v1beta1"
+    },
+    "kind": {
+      "default": "BarChart",
+      "description": "BarChart express quantities through a bar's length, using a common baseline. Bar charts series should contain a `data` property containing an array of values",
+      "type": "string"
+    },
+    "spec": {
+      "type": "object",
+      "properties": {
+        "widgetData": {
+          "type": "object",
+          "required": ["data"],
+          "properties": {
+            "data": {
+              "type": "array",
+              "description": "Array of grouped data entries for the bar chart",
+              "items": {
+                "type": "object",
+                "required": ["bars"],
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "description": "Label for the group/category"
+                  },
+                  "bars": {
+                    "type": "array",
+                    "description": "Bars within the group, each representing a value",
+                    "items": {
+                      "type": "object",
+                      "required": ["value", "percentage"],
+                      "properties": {
+                        "value": {
+                          "type": "string",
+                          "description": "Label or identifier for the bar"
+                        },
+                        "percentage": {
+                          "type": "integer",
+                          "description": "Height of the bar as a percentage (0–100)"
+                        },
+                        "color": {
+                          "type": "string",
+                          "enum": [
+                            "blue",
+                            "darkBlue",
+                            "orange",
+                            "gray",
+                            "red",
+                            "green",
+                            "violet"
+                          ],
+                          "description": "Color of the bar"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "apiRef": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": ["name", "namespace"]
+        },
+        "widgetDataTemplate": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "forPath": {
+                "type": "string"
+              },
+              "expression": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": ["widgetData"]
+    }
+  },
+  "required": ["kind", "spec", "version"]
+}

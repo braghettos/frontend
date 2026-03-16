@@ -1,0 +1,23 @@
+.row {
+  /* Allows Row to remain in parent container without overflow */
+  :global(.ant-row) {
+    margin: 0 !important;
+    width: 100%;
+  }
+
+  :global(.ant-row > .ant-col) {
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  /* Sets same height to Row children */
+  :global(.ant-row > div > *) {
+    height: 100%;
+  }
+
+  .column {
+    margin-bottom: var(--spacing-lg)
+  }
+}

@@ -1,0 +1,28 @@
+kind: ButtonGroup
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: test-inline-group
+  namespace: test-namespace
+spec:
+  widgetData:
+    alignment: center
+    allowedResources:
+      - buttons
+    gap: medium
+    items:
+      - resourceRefId: button-1
+      - resourceRefId: button-2
+  resourcesRefs:
+    items:
+      - id: button-1
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: button-1
+        namespace: test-namespace
+        resource: buttons
+        verb: GET
+      - id: button-2
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: button-2
+        namespace: test-namespace
+        resource: buttons
+        verb: GET

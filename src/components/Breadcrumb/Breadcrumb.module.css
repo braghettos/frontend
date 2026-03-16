@@ -1,0 +1,47 @@
+:global(.ant-breadcrumb) {
+  display: flex;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+
+:global(.ant-breadcrumb > ol) {
+  display: flex;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+:global(.ant-breadcrumb > ol > li) {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.breadcrumbItem {
+  cursor: pointer;
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &.capitalize {
+    text-transform: capitalize;
+  }
+
+  & .link {
+    display: flex;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+
+    &:hover {
+      color: var(--primary-color);
+    }
+  }
+}

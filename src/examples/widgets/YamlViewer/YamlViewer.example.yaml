@@ -1,0 +1,59 @@
+# Empty JSON string
+# Target: intentionally empty JSON input.
+# Expected behavior: displays parsing error indicating invalid JSON.
+kind: YamlViewer
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-yamlviewer-empty-json
+  namespace: krateo-system
+spec:
+  widgetData:
+    json: ''
+---
+# Invalid JSON format
+# Target: verify error handling when JSON is malformed.
+# Expected behavior: displays parsing error with details of the syntax issue.
+kind: YamlViewer
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-yamlviewer-invalid-json
+  namespace: krateo-system
+spec:
+  widgetData:
+    json: '{invalidJson:true,'
+---
+# Valid simple JSON
+# Target: basic conversion from JSON to YAML.
+# Expected behavior: renders YAML equivalent of the JSON object.
+kind: YamlViewer
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-yamlviewer-simple-json
+  namespace: krateo-system
+spec:
+  widgetData:
+    json: '{"type":"object","additionalProperties":false,"properties":{"kind":{"type":"string","default":"YamlViewer"}}}'
+---
+# JSON with nested structure
+# Target: ensure YAML conversion handles nested objects and arrays.
+# Expected behavior: nested JSON structures are properly represented in YAML.
+kind: YamlViewer
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-yamlviewer-nested-json
+  namespace: krateo-system
+spec:
+  widgetData:
+    json: '{"user":{"id":123,"name":"Alice"},"roles":["admin","editor"]}'
+---
+# JSON with special characters
+# Target: verify correct handling of escape characters and quotes.
+# Expected behavior: special characters are preserved in YAML output.
+kind: YamlViewer
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-yamlviewer-special-chars
+  namespace: krateo-system
+spec:
+  widgetData:
+    json: '{"text":"Line1\\nLine2: Example \"quote\" test"}'

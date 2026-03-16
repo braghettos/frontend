@@ -1,0 +1,14 @@
+.form {
+  width: 100%;
+
+  .link {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 30px;
+    margin-top: -10px;
+  }
+
+  .button {
+    width: 100%;
+  }
+}

@@ -1,0 +1,192 @@
+# Empty items array
+# Target: simulate a ButtonGroup without any referenced widgets. 
+# Expected behavior: no elements are shown, confirming that an empty configuration 
+# results in a neutral layout (no placeholder or visual artifact).
+kind: ButtonGroup
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-buttongroup-empty
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [buttons]
+    alignment: left
+    gap: small
+    items: []
+  resourcesRefs:
+    items: []
+---
+# Missing resource reference
+# Target: test the resilience of the layout when one of the child references is invalid or unresolved.
+# Expected behavior: only valid items are displayed; invalid or missing references are silently ignored, 
+# ensuring that the group remains aligned and stable.
+kind: ButtonGroup
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-buttongroup-missing-ref
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [buttons]
+    alignment: left
+    gap: medium
+    items:
+      - resourceRefId: example-buttongroup-button-1
+      - resourceRefId: button-missing
+  resourcesRefs:
+    items:
+      - id: example-buttongroup-button-1
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-buttongroup-button-1
+        namespace: krateo-system
+        resource: buttons
+        verb: 
+---
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-buttongroup-button-1
+  namespace: krateo-system
+spec:
+  widgetData:
+    actions: {}
+    label: Action
+    icon: fa-sun
+    type: primary
+    clickActionId: action-1
+  resourcesRefs:
+    items: []
+---
+# Single item alignment check
+# Target: validate layout behavior when only one child is present.
+# Expected behavior: the single widget remains aligned according to the specified rule 
+# (in this case, centered within the inline container).
+kind: ButtonGroup
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-buttongroup-single-center
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [buttons]
+    alignment: center
+    gap: small
+    items:
+      - resourceRefId: example-buttongroup-button-1
+  resourcesRefs:
+    items:
+      - id: example-buttongroup-button-1
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-buttongroup-button-1
+        namespace: krateo-system
+        resource: buttons
+        verb: GET
+---
+# Multiple items with default spacing
+# Target: verify that multiple widgets are rendered in a single horizontal row with consistent small spacing.
+# Expected behavior: items appear inline, aligned to the left, evenly separated using the default gap value.
+kind: ButtonGroup
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-buttongroup-multiple-default
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [buttons]
+    alignment: left
+    gap: small
+    items:
+      - resourceRefId: example-buttongroup-button-1
+      - resourceRefId: example-buttongroup-button-2
+  resourcesRefs:
+    items:
+      - id: example-buttongroup-button-1
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-buttongroup-button-1
+        namespace: krateo-system
+        resource: buttons
+        verb: GET
+      - id: example-buttongroup-button-2
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-buttongroup-button-2
+        namespace: krateo-system
+        resource: buttons
+        verb: GET
+---
+kind: Button
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-buttongroup-button-2
+  namespace: krateo-system
+spec:
+  widgetData:
+    actions: {}
+    label: Other action
+    icon: fa-sun
+    type: default
+    clickActionId: action-1
+  resourcesRefs:
+    items: []
+---
+# Large gap configuration
+# Target: verify that wider spacing between elements is applied when a large gap is configured.
+# Expected behavior: items are rendered inline with noticeable separation, maintaining readability 
+# and visual clarity even with multiple elements.
+kind: ButtonGroup
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-buttongroup-large-gap
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [buttons]
+    alignment: left
+    gap: large
+    items:
+      - resourceRefId: example-buttongroup-button-1
+      - resourceRefId: example-buttongroup-button-2
+  resourcesRefs:
+    items:
+      - id: example-buttongroup-button-1
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-buttongroup-button-1
+        namespace: krateo-system
+        resource: buttons
+        verb: GET
+      - id: example-buttongroup-button-2
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-buttongroup-button-2
+        namespace: krateo-system
+        resource: buttons
+        verb: GET
+---
+# Alignment to the right
+# Target: ensure correct horizontal alignment when elements should appear right-justified.
+# Expected behavior: all widgets are grouped together along the right margin, preserving their spacing and order.
+kind: ButtonGroup
+apiVersion: widgets.templates.krateo.io/v1beta1
+metadata:
+  name: example-buttongroup-right-aligned
+  namespace: krateo-system
+spec:
+  widgetData:
+    allowedResources: [buttons]
+    alignment: right
+    gap: medium
+    items:
+      - resourceRefId: example-buttongroup-button-1
+      - resourceRefId: example-buttongroup-button-2
+  resourcesRefs:
+    items:
+      - id: example-buttongroup-button-1
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-buttongroup-button-1
+        namespace: krateo-system
+        resource: buttons
+        verb: GET
+      - id: example-buttongroup-button-2
+        apiVersion: widgets.templates.krateo.io/v1beta1
+        name: example-buttongroup-button-2
+        namespace: krateo-system
+        resource: buttons
+        verb: GET  
