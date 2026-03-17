@@ -89,20 +89,9 @@ jobs:
           name: frontend-crds-yaml-files
           path: ${{ github.workspace }}/scripts/krateoctl-output/*.yaml
 
-      - name: Authenticate with GitHub App
-        id: authenticate
-        uses: tibdex/github-app-token@v1
-        with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.PRIVATE_KEY }}
-          repository: braghettos/frontend-chart
-
-      - name: Install GitHub CLI
-        run: sudo apt-get install gh -y
-
       - name: Push .yaml files to braghettos/frontend-chart via PR
         env:
-          GH_TOKEN: ${{ steps.authenticate.outputs.token }}
+          GH_TOKEN: ${{ secrets.PAT }}
         run: |
           # Get the latest tag from the local repository
           cd $GITHUB_WORKSPACE
