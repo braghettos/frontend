@@ -21,7 +21,14 @@ import { cssVariables } from './theme/palette'
 
 library.add(fab, fas, far)
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30 * 1000,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
 
 const AppInitializer: React.FC = () => {
   const { isLoading: isRoutesLoading, routerVersion, routes } = useRoutesContext()
