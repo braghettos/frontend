@@ -50,6 +50,10 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
       },
     })
 
+    if (!res.ok) {
+      throw new Error(`Widget fetch failed: ${res.status} ${res.statusText}`)
+    }
+
     const widget = (await res.json()) as Widget
     return widget
   }

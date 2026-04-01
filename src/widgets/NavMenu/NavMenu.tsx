@@ -55,6 +55,9 @@ export function NavMenu({ resourcesRefs, uid }: WidgetProps<NavMenuWidgetData>) 
               Authorization: `Bearer ${getAccessToken()}`,
             },
           })
+          if (!res.ok) {
+            throw new Error(`NavMenuItem fetch failed: ${res.status} ${res.statusText}`)
+          }
           const widget = (await res.json()) as NavMenuItemResponse
           return widget
         },
