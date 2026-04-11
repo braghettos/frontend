@@ -1,10 +1,11 @@
 /* eslint-disable sort-keys/sort-keys-fix */
 /* this rules conflicts with react-query ordering required for correct type inference */
 
+import { useEffect } from 'react'
 import { useInfiniteQuery, useIsFetching } from '@tanstack/react-query'
 
 import { useConfigContext } from '../context/ConfigContext'
-import type { ResourceRef, Widget } from '../types/Widget'
+import type { Widget } from '../types/Widget'
 import { getAccessToken } from '../utils/getAccessToken'
 
 function parseNumberParam(param: string | null) {
@@ -83,49 +84,46 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
         perPage: pageParams.perPage,
       }
     },
+    // Phase 1 cumulative-slice pagination: each page call returns the
+    // complete widget state for the cumulative slice [0 : page * perPage]
+    // of the underlying data source. No cross-page merging is needed —
+    // the latest page's output IS the current state.
+    //
+    // The backend does all the work:
+    //   - snowplow's widget resolver injects .slice into the widgetDataTemplate
+    //     data source so the widget's JQ can cumulatively slice the list.
+    //   - The table widget's forPath slices .list[0 : K*perPage] then sorts.
+    //   - The piechart widget's indexed forPaths count items in the same
+    //     cumulative slice, so values grow monotonically as pages arrive.
     select: (data) => {
-      const [firstPage] = data.pages
-
-      if (typeof firstPage.status !== 'object') {
-        return firstPage
+      if (data.pages.length === 0) {
+        // react-query initial state — return an empty Widget-shaped object
+        return data.pages[0]
       }
-
-      // Merge items from all pages
-      const allResourcesRefs: ResourceRef[] = []
-      const allWidgetDataItems: unknown[] = []
-
-      for (const page of data.pages) {
-        if (typeof page.status === 'object' && page.status?.resourcesRefs?.items) {
-          allResourcesRefs.push(...page.status.resourcesRefs.items)
-        }
-        if (
-          typeof page.status === 'object'
-          && page.status?.widgetData
-          && typeof page.status.widgetData === 'object'
-          && 'items' in page.status.widgetData
-          && Array.isArray((page.status.widgetData as { items: unknown[] }).items)
-        ) {
-          allWidgetDataItems.push(...(page.status.widgetData as { items: unknown[] }).items)
-        }
-      }
-
-      // Return NEW object to ensure React detects the change
-      return {
-        ...firstPage,
-        status: {
-          ...firstPage.status,
-          resourcesRefs: {
-            ...firstPage.status.resourcesRefs,
-            items: allResourcesRefs,
-          },
-          widgetData: {
-            ...(firstPage.status.widgetData as Record<string, unknown>),
-            items: allWidgetDataItems,
-          },
-        },
-      }
+      return data.pages[data.pages.length - 1]
     },
   })
+
+  // Auto-pagination: when the latest page signals hasNextPage, fire the
+  // next page fetch in the background without waiting for user interaction.
+  // Together with the latest-page-wins select() above, this drives the
+  // progressive-rendering UX: widget renders page 1 immediately, then page 2
+  // replaces it when ready (with 2x more data), and so on until the cumulative
+  // slice covers the full data set and slice.continue becomes false.
+  useEffect(() => {
+    if (
+      queryResult.hasNextPage
+      && !queryResult.isFetchingNextPage
+      && !queryResult.isFetching
+    ) {
+      void queryResult.fetchNextPage()
+    }
+  }, [
+    queryResult.hasNextPage,
+    queryResult.isFetchingNextPage,
+    queryResult.isFetching,
+    queryResult.fetchNextPage,
+  ])
 
   const resourcesRefsPaths = typeof queryResult.data?.status === 'object'
     ? queryResult.data.status.resourcesRefs?.items.map((item) => item.path)
