@@ -126,7 +126,7 @@ export const useWidgetQuery = (widgetEndpoint: string) => {
   ])
 
   const resourcesRefsPaths = typeof queryResult.data?.status === 'object'
-    ? queryResult.data.status.resourcesRefs?.items.map((item) => item.path)
+    ? queryResult.data.status.resourcesRefs?.items?.map((item) => item.path) ?? []
     : []
 
   const resourcesRefsFetching = useIsFetching({
