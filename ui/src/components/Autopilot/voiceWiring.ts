@@ -1,0 +1,143 @@
+/**
+ * DICTATION WIRING — the one hook that connects the voice store to everything it is
+ * deliberately not allowed to import itself.
+ *
+ * WHY THIS FILE EXISTS AT ALL, one directory OUTSIDE `voice/`. An ESLint rule fences
+ * everything under `voice/` from `transport.ts` and `AutopilotProvider`, so that voice
+ * input CANNOT send a turn — the invariant is structural rather than a promise, and it is
+ * not relaxed for the sake of three convenient imports. But the transcription call still
+ * needs the portal bearer, the ONE rate-limit detector (FR 55 — not a second copy of it)
+ * and the in-place session resume. Those arrive here, on the permitted side of the fence,
+ * and are handed to the store. The dependency arrow points INTO `voice/` and never out.
+ *
+ * It also keeps `AutopilotRail.tsx` inside its 500-line ESLint budget, which is a real
+ * constraint rather than a stylistic one.
+ *
+ * WHAT IT WIRES
+ *   · capability + language, re-evaluated when config loads and on window focus (FR 6);
+ *   · the transcription dependencies, rebuilt when the URL or model changes;
+ *   · the microphone permission watcher, including a revocation that lands MID-RECORDING;
+ *   · the vocabulary bias, from the same live page context the turn already carries,
+ *     redacted through the same chokepoint (FR 54);
+ *   · one console line, on first rail open, naming why dictation is unavailable (FR 5).
+ */
+
+import { useEffect } from 'react'
+
+import { useConfigContext } from '../../context/ConfigContext'
+import { raiseSessionExpired } from '../../utils/sessionResume'
+
+import { redactValue } from './redact'
+import { a2aAuthHeader, rateLimitNotice } from './transport'
+import type { PageContextEnvelope } from './types'
+import { watchMicrophonePermission } from './voice/permission'
+import { autopilotSpeakBackStore } from './voice/speak/speakBackStore'
+import { DEFAULT_VOICE_MODEL } from './voice/transcribe'
+import { autopilotVoiceStore } from './voice/voiceStore'
+
+/**
+ * Stop BOTH halves of voice at once — the microphone and the synthesiser.
+ *
+ * Every moment that ends a conversation ends both: provider unmount, `newThread()`,
+ * `switchToThread()` (voice spec FR 44). Calling them as one is not just brevity — it is
+ * the guarantee that a future teardown path cannot remember one and forget the other,
+ * which would leave either a live microphone or a voice reading an answer that is no
+ * longer on screen.
+ */
+export const stopVoice = (): void => {
+  autopilotSpeakBackStore.cancel()
+  autopilotVoiceStore.cancel()
+}
+
+/** How many page names ride along as vocabulary bias before the block is capped. */
+const MAX_CONTEXT_NAMES = 20
+
+/**
+ * FR 54: resource and namespace names from the live page, so the model spells
+ * `payments-7f9c` the way it is actually written rather than as three English words.
+ *
+ * Every candidate goes through `redactValue()` FIRST — the same chokepoint the turn's
+ * page-context envelope uses — and anything the scrub touched is dropped rather than sent
+ * in redacted form: a value that looked like a credential has no business being spelled
+ * out to a transcription model, in any shape. Names are also length-bounded, because a
+ * long bias list inflates the TEXT side of the FR 61 token arithmetic, which is the side
+ * that must stay small for the audio-arrival gate to keep its headroom.
+ */
+export const contextVocabulary = (context: PageContextEnvelope | null): string[] => {
+  if (!context) {
+    return []
+  }
+  const names: string[] = []
+  for (const widget of context.widgets ?? []) {
+    for (const candidate of [widget.name, widget.title]) {
+      if (!candidate || candidate.length > 40) {
+        continue
+      }
+      const scrubbed = redactValue(candidate)
+      if (typeof scrubbed === 'string' && scrubbed === candidate) {
+        names.push(candidate)
+      }
+    }
+    if (names.length >= MAX_CONTEXT_NAMES) {
+      break
+    }
+  }
+  return names.slice(0, MAX_CONTEXT_NAMES)
+}
+
+/**
+ * Wire dictation for the lifetime of the rail. `collect` is the rail's live page-context
+ * snapshot (called only while the rail is open, as it already is for the "seeing …"
+ * strip); `open` drives the console line and the collapse teardown.
+ */
+export const useVoiceWiring = (open: boolean, context: PageContextEnvelope | null): void => {
+  const { config } = useConfigContext()
+  const transcribeUrl = config?.api.AUTOPILOT_VOICE_TRANSCRIBE_URL
+  const model = config?.api.AUTOPILOT_VOICE_MODEL
+
+  // FR 6: capability is re-evaluated when config loads AND on window focus, so a portal
+  // that gains TLS (or an operator who fills the key in) does not need a page reload.
+  useEffect(() => {
+    autopilotVoiceStore.setCapabilityInput({ transcribeUrl })
+    const onFocus = () => autopilotVoiceStore.setCapabilityInput({ transcribeUrl })
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [transcribeUrl])
+
+  useEffect(() => {
+    if (!transcribeUrl) {
+      autopilotVoiceStore.installTranscribeDeps(null)
+      return
+    }
+    autopilotVoiceStore.installTranscribeDeps({
+      authHeader: a2aAuthHeader,
+      fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, init),
+      model: model || DEFAULT_VOICE_MODEL,
+      raiseSessionExpired,
+      rateLimitNotice,
+      url: transcribeUrl,
+    })
+  }, [transcribeUrl, model])
+
+  // FR 19: the watcher, not a check at press time — a permission granted or revoked in the
+  // address bar must move the control live, including mid-recording.
+  useEffect(() => watchMicrophonePermission((permission) => autopilotVoiceStore.setPermission(permission)), [])
+
+  // Keyed on the NAMES, not the envelope: `collect()` returns a fresh object every render,
+  // so depending on it would re-run this on every keystroke for no change.
+  const names = contextVocabulary(context)
+  const namesKey = names.join('\u0000')
+  useEffect(() => {
+    autopilotVoiceStore.setContextNames(namesKey ? namesKey.split('\u0000') : [])
+  }, [namesKey])
+
+  // FR 5/44: say once why nothing will be dictated; stop capture when the rail collapses —
+  // a microphone still open behind a closed rail has no visible way to be stopped.
+  useEffect(() => {
+    if (open) {
+      autopilotVoiceStore.logUnavailableOnce(window.location.origin)
+    } else {
+      autopilotVoiceStore.cancel()
+    }
+  }, [open])
+}

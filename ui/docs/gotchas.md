@@ -127,3 +127,35 @@ syncs its output to a `crds-subchart/` path via an auto-PR — see the
 [release runbook](../../docs/release.md) for the current state of that seam. Schema (image
 tag) and deployed CRD (chart version) can drift when a sync PR isn't merged for a tag; a
 newer widget CR applied against an older frontend image throws `Unknown widget kind`.
+
+## Autopilot dictation sends microphone audio to Google Vertex AI
+
+Enabling dictation means setting `config.AUTOPILOT_VOICE_TRANSCRIBE_URL` to a
+`/chat/completions` endpoint on the agent gateway. **Its presence is the on/off switch**;
+empty (the default) and no microphone control renders at all, so the composer is unchanged.
+
+Four things an operator must know before setting it:
+
+- **The audio goes to Vertex.** The gateway's `/llm/v1` backend is an
+  `AgentgatewayBackend` with `spec.ai.provider.vertexai` (`region: global` — no region
+  guarantee), and that is true **even on installs that have moved the agent fleet to a
+  local model**, because the route, not the `ModelConfig`, decides. The audio is used only
+  to produce text in the composer; nothing reaches an agent until the user presses Send.
+- **HTTPS is required everywhere, not just on the portal.** Capture needs
+  `window.isSecureContext`, so a plain-HTTP portal renders no control whatever this key
+  says (one `console.info` on first rail open names the reason and the origin). And the
+  moment the portal is `https://`, every backend URL in `config.json` must be too, or the
+  browser blocks them as mixed content.
+- **A dedicated `/stt/v1` route is recommended over `/llm/v1`.** The `/llm/v1` route
+  carries the response guardrails policy, which **masks** e-mail addresses, phone numbers
+  and `*.local` hostnames inside a transcript (the user sees words they did not say, with
+  no signal) and **rejects** credential-shaped prose with a 502. A route on the same
+  backend without that policy is safe by construction here: the model has no tools and no
+  cluster data on this call, so the only content it can return is what the user said.
+- **`AUTOPILOT_VOICE_MODEL` must accept inline audio.** It has to be a model the gateway
+  routes to a backend that takes a `file` part with a `data:audio/…;base64,…` URL; a
+  `gemini-*` model on the Vertex backend does. An `input_audio` part is silently discarded
+  by the gateway's Gemini translation, which is why the client never sends one — and why
+  it verifies from `usage.prompt_tokens` that audio was actually billed before letting any
+  text reach the composer. With no audio the model does not error: it returns a fluent,
+  confident, invented sentence.

@@ -48,6 +48,7 @@ import { a2aAuthHeader, createEchoTransport, createKagentTransport } from './tra
 import type { AutopilotActionChip, AutopilotFrame, AutopilotMessage, AutopilotTransport, EvidenceEntry, PageContextEnvelope, TurnModality } from './types'
 import { buildContextDelta, useAutopilotContext } from './useAutopilotContext'
 import { autopilotSpeakBackStore } from './voice/speak/speakBackStore'
+import { stopVoice } from './voiceWiring'
 
 interface AutopilotContextValue {
   /** Whether Autopilot is CONFIGURED (endpoint present / dev echo) — controls rail + toggle
@@ -241,7 +242,19 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   useEffect(() => () => {
     abortRef.current?.()
     approvalRef.current?.governor.dispose()
-    autopilotSpeakBackStore.cancel()
+    // Provider unmount closes the microphone AND stops speech (voice spec FR 44).
+    //
+    // READ THIS BEFORE "FIXING" IT TO SATISFY FR 42. A routerVersion remount runs this
+    // cleanup too — React cannot tell a remount from a real unmount — so capture does NOT
+    // in fact survive a routes-as-data reload, and FR 42's "keeps capture running" clause
+    // is unmet in the app (the store-level test passes because it drives the store
+    // directly). Deleting this line does not fix that: `open` is still `useState(false)`
+    // below, so the rail comes back COLLAPSED, and `useVoiceWiring`'s collapse teardown
+    // cancels capture on the way in regardless. Surviving the remount for real means
+    // moving `open` into a module-level store as well, so the rail returns open with its
+    // meter, timer and Cancel visible. Until then this line is the honest backstop: better
+    // a dictation cut short than a microphone left live behind a rail that came back shut.
+    stopVoice()
   }, [])
 
   // The docked rail's width as a :root CSS var (so body-portalled overlays like the Filters
@@ -712,7 +725,10 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   const teardownThread = useCallback(() => {
     abortRef.current?.()
     abortRef.current = null
-    autopilotSpeakBackStore.cancel()
+    // FR 44: newThread() and switchToThread() abort any capture or upload in flight as
+    // well as any speech. A transcript arriving into a thread the user has already left
+    // would land in a composer that belongs to a different conversation.
+    stopVoice()
     // DENY-BY-DEFAULT on thread reset: a pending approval is rejected (fire-and-forget,
     // no-op handlers — the new thread does not render the released task's stream) so
     // the paused kagent task is never left dangling toward an approve.
