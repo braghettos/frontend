@@ -27,7 +27,7 @@ import { draftDisplayName, lintBlueprintDraft } from './blueprintDraft'
 import { createBlueprintDraftStore } from './blueprintDraftStore'
 import { createBlueprintGate } from './blueprintGate'
 import { buildBlueprintPublishOps } from './blueprintPublish'
-import { buildClaimPublish } from './builderClaimPublish'
+import { buildClaimPublish, trackPublishStatus } from './builderClaimPublish'
 import { useBuilderTargets } from './builderTargets'
 import { autopilotConversationStore } from './conversationStore'
 import { recordToolFrame } from './evidence'
@@ -327,6 +327,9 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
             // Option A: the branch is pushed; the human opens the PR/MR in their own SCM.
             chips.push({ label: 'Open change request', readOnly: true, url: deepLink, verb: 'openChangeRequest' })
           }
+          // Claim publish: surface each rendered LocalResource's status (a publish to a missing repo
+          // fails every file — git-provider clones, it never creates the repo).
+          if (compiled.claim) { trackPublishStatus(config, compiled.claim, setMessages, randomId) }
         }
       }
       if (proposal.verb === 'prefillForm') {
