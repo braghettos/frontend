@@ -21,6 +21,10 @@ import {
 import { BUILDER_PUBLISH_GVR_DENIAL, resolveBuilderPublishGvr } from './builderPublishGvr'
 import { compileClaimPublish, type GateVerdict, type PublishCompileResult } from './publishCompile'
 
+// Post-apply LocalResource status tracking is a sibling concern of the claim publish — re-exported
+// here so AutopilotProvider imports it off the same module it already gets buildClaimPublish from.
+export { trackPublishStatus } from './builderPublishStatus'
+
 export interface ClaimPublishResult {
   compiled: PublishCompileResult
   /** The host-aware Open-PR/MR URL — set only on a compiled (non-denied) publish. */
@@ -73,6 +77,11 @@ export const buildClaimPublish = async (args: {
   const claim = buildBuilderPublishClaim({ apiVersion: gvr.apiVersion, builder: args.builder, files: args.files, namespace: args.namespace, slug: args.slug, target })
   const ops = buildBuilderPublishOps(claim, gvr.gvr)
   const compiled = compileClaimPublish(ops, args.gate(ops), args.origin)
+  if (compiled.denial === null) {
+    // Post-apply, the composition renders one LocalResource per held file (publish-<slug>-NNN) — carry
+    // the coordinates so the provider can poll + surface each file's Synced status.
+    compiled.claim = { namespace: args.namespace, paths: args.files.map((file) => file.path), publishName: claim.spec.name, target: { branch: claim.spec.branch, owner: target.namespace, repo: target.repo } }
+  }
   return {
     branch: claim.spec.branch,
     compiled,

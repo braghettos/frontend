@@ -15,6 +15,7 @@ import { stampAuthorship, type AuthorshipOrigin } from './authorship'
 import { draftDisplayName } from './blueprintDraft'
 import { substituteFileContent, type BlueprintDraftHeld, type BlueprintDraftStore } from './blueprintDraftStore'
 import type { BlueprintGate } from './blueprintGate'
+import type { PublishStatusClaim } from './builderPublishStatus'
 import { substituteOasAttachment, type OasAttachment } from './oasAttachment'
 import { isPageDraft, pageDisplayName, pageDraftFiles, type NavHint } from './pageDraft'
 
@@ -25,6 +26,8 @@ export type GateVerdict = { allowed: true } | { allowed: false; reason: string }
 export interface PublishCompileResult {
   denial: string | null
   ops: ApplyResourceSetOp[] | null
+  /** SCM-agnostic claim publishes only: the LocalResources to watch post-apply (set by buildClaimPublish). */
+  claim?: PublishStatusClaim
 }
 
 /**

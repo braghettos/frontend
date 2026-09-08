@@ -122,6 +122,13 @@ export const PublishTargetFormHost = () => {
           {/* Name the artifact at the write gate: what a publish of THIS kind actually commits. */}
           {pending ? KIND_BLURB[pending.req.kind] : KIND_BLURB.page}
         </Typography.Paragraph>
+        <Typography.Paragraph data-testid='publish-repo-precondition' type='warning'>
+          {/* The publish CLONES the destination (git-provider never creates a repo). A repo that does
+              not exist fails every file with a clone/auth error — so state the precondition here. */}
+          The repository below must <strong>already exist</strong>: publishing pushes a branch to it and
+          opens a change request — it does not create the repository. If it isn&rsquo;t there yet, create
+          it (with an initial <Typography.Text code>main</Typography.Text> branch) first, then publish.
+        </Typography.Paragraph>
         <Form form={form} layout='vertical'>
           <Form.Item label='Repository owner' name='owner' rules={[{ message: 'the owner/org (or GitLab group) is required', required: true }]}>
             <Input placeholder='krateo-blueprints' />
