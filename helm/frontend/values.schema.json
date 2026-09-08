@@ -679,6 +679,16 @@
           "type": "string",
           "title": "Autopilot Voice Speak Back",
           "default": "on"
+        },
+        "AUTOPILOT_VOICE_TRANSCRIBE_URL": {
+          "type": "string",
+          "title": "Autopilot Voice Transcribe URL",
+          "default": ""
+        },
+        "AUTOPILOT_VOICE_MODEL": {
+          "type": "string",
+          "title": "Autopilot Voice Model",
+          "default": "gemini-3.8-flash"
         }
       },
       "default": {
@@ -699,7 +709,9 @@
         "AUTOPILOT_PUBLISH_VIA_GIT_PROVIDER": "true",
         "AUTOPILOT_GIT_SCM": "github",
         "AUTOPILOT_GIT_HOST": "github.com",
-        "AUTOPILOT_VOICE_SPEAK_BACK": "on"
+        "AUTOPILOT_VOICE_SPEAK_BACK": "on",
+        "AUTOPILOT_VOICE_TRANSCRIBE_URL": "",
+        "AUTOPILOT_VOICE_MODEL": "gemini-3.8-flash"
       }
     },
     "env": {

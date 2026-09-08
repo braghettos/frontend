@@ -34,6 +34,9 @@ import { a2aAuthHeader } from './transport'
 import type { AutopilotMessage, EvidenceEntry } from './types'
 import { SpeakBackStatus, SpeakBackToggle } from './voice/speak/SpeakBackControls'
 import { autopilotSpeakBackStore } from './voice/speak/speakBackStore'
+import { useVoiceBusy, VoiceButton, VoiceStatus } from './voice/VoiceControl'
+import { autopilotVoiceStore } from './voice/voiceStore'
+import { useVoiceWiring } from './voiceWiring'
 
 /** What the agent looked up, never what it read back. */
 const EvidenceRow = ({ entry }: { entry: EvidenceEntry }) => {
@@ -315,6 +318,8 @@ const AutopilotRail = () => {
   // question, and speak-back's whole trigger is a property of HOW the draft was composed, so
   // it has to survive the remount alongside the text. See composerDraftStore.ts.
   const { text: draft } = useSyncExternalStore(autopilotComposerDraftStore.subscribe, autopilotComposerDraftStore.getSnapshot)
+  // FR 25: Send (and the microphone) are held while a transcription is in flight.
+  const voiceBusy = useVoiceBusy()
   // Session history (Vincenzo item P, split-view iteration): widens the rail to dock a thread
   // list beside the transcript (see .apRail.split). Local to the rail — not lifted into the
   // provider — because this component is also the SOLE owner of the `--autopilot-rail-width`
@@ -406,18 +411,28 @@ const AutopilotRail = () => {
     window.addEventListener('pointerup', onUp)
   }
 
+  // Live page-context snapshot for the "seeing …" strip (real cache, not memory).
+  // Cheap (a synchronous map over the widget cache); recomputed each render so it
+  // tracks navigation and new turns without a stale memo. Computed ABOVE the `enabled`
+  // guard so the dictation hook below it stays unconditional.
+  const context = enabled && open ? collect() : null
+
+  // Dictation (voice spec §2), wired one directory outside `voice/` — the ESLint fence
+  // keeps the voice modules away from the transport and `send`, so the bearer, the
+  // rate-limit detector and the session resume are injected from the permitted side.
+  useVoiceWiring(enabled && open, context)
+
   if (!enabled) {
     return null
   }
 
-  // Live page-context snapshot for the "seeing …" strip (real cache, not memory).
-  // Cheap (a synchronous map over the widget cache); recomputed each render so it
-  // tracks navigation and new turns without a stale memo.
-  const context = open ? collect() : null
-
   const submit = () => {
     const text = draft.trim()
-    if (!text || streaming) {
+    // FR 25's hold on Send belongs HERE, not only on the button: Enter is the habitual send
+    // gesture, and pressing it mid-transcription would send the typed half of a question —
+    // "restart the payments deployment in" — then clear the draft, so the words still
+    // arriving would land in an empty composer and, if sent next, be stamped `voice`.
+    if (!text || streaming || autopilotVoiceStore.getSnapshot().phase === 'transcribing') {
       return
     }
     // Read the draft's provenance BEFORE clearing it: `voice` only when every word came from
@@ -431,11 +446,35 @@ const AutopilotRail = () => {
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
+      // ENTER WHILE LISTENING STOPS CAPTURE AND DOES NOT SUBMIT (voice spec FR 10). The
+      // user has not yet SEEN the transcript, and auto-sending words nobody has read is
+      // precisely the mishearing-triggers-an-action risk the whole feature is built to
+      // exclude. They read it, then press Enter again.
+      if (autopilotVoiceStore.getSnapshot().phase === 'listening') {
+        autopilotVoiceStore.stop()
+        return
+      }
       submit()
     }
-    // Escape stops a spoken answer (FR 75) without touching the draft or the thread.
+    // Escape stops a spoken answer (FR 75) and cancels dictation (FR 13) — the recording
+    // is discarded, nothing is uploaded, the draft is left exactly as it was.
     if (event.key === 'Escape') {
       autopilotSpeakBackStore.cancel()
+      autopilotVoiceStore.cancel()
+    }
+  }
+
+  // FR 57: matched on `event.code`, so macOS does not insert "µ" into the textarea, and
+  // only with Alt alone — a chord that happens to include Alt belongs to someone else.
+  const onRailKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    // The `open` test is load-bearing: A COLLAPSED RAIL IS STILL FOCUSABLE. `.apRail` closes
+    // with `width: 0; overflow: hidden`, not `display: none`, so the body — including the
+    // Collapse button just pressed — keeps receiving keys. Opening the microphone here would
+    // clip the meter, timer and Cancel to zero width: a live mic with no visible way to stop
+    // it, which is what FR 44's collapse teardown exists to prevent.
+    if (open && event.altKey && event.code === 'KeyM' && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+      event.preventDefault()
+      autopilotVoiceStore.toggle()
     }
   }
 
@@ -469,6 +508,7 @@ const AutopilotRail = () => {
   return (
     <aside
       className={`${styles.apRail} ${open ? styles.open : ''} ${open && historyOpen ? styles.split : ''} ${open && fullWidth ? styles.full : ''} ${resizing ? styles.resizing : ''}`}
+      onKeyDown={onRailKeyDown}
       ref={railElRef}
       style={open ? { width: fullWidth ? '100%' : `${dockedWidth}px` } : undefined}
     >
@@ -588,14 +628,17 @@ const AutopilotRail = () => {
               ) : null}
               {oasError ? <div className={styles.apOasError}>{oasError}</div> : null}
               <SpeakBackStatus />
+              <VoiceStatus />
               <div className={styles.apInput}>
                 <textarea
                   className={styles.apTextarea}
                   onChange={(event) => {
                     // Typing stops a spoken answer immediately (FR 75) and marks the draft
                     // keyboard-touched for good — one character is enough to make this a
-                    // typed turn, which is never spoken back.
+                    // typed turn, which is never spoken back. It also clears a previous
+                    // dictation error (FR 22): the user has moved on.
                     autopilotSpeakBackStore.cancel()
+                    autopilotVoiceStore.dismissError()
                     autopilotComposerDraftStore.setTypedDraft(event.target.value)
                   }}
                   onKeyDown={onKeyDown}
@@ -604,12 +647,15 @@ const AutopilotRail = () => {
                   rows={1}
                   value={draft}
                 />
+                <VoiceButton />
                 {streaming ? (
                   <button aria-label='Stop' className={styles.apSend} onClick={stop} title='Stop generating' type='button'>
                     <StopIcon />
                   </button>
                 ) : (
-                  <button aria-label='Send' className={styles.apSend} disabled={!draft.trim()} onClick={submit} type='button'>
+                  // FR 25: Send is held while a transcription is in flight — the words that
+                  // are about to arrive belong in the question being sent.
+                  <button aria-busy={voiceBusy} aria-label='Send' className={styles.apSend} disabled={!draft.trim() || voiceBusy} onClick={submit} type='button'>
                     <SendIcon />
                   </button>
                 )}

@@ -526,7 +526,31 @@ export default tsEslint.config(
   // review reads afterwards. Making the import fail turns that from a promise into a fact.
   {
     files: ['src/components/Autopilot/voice/**/*.{ts,tsx}'],
-    name: 'Voice cannot send a turn; speak-back cannot call a model (voice spec FR 65/68)',
+    name: 'Voice cannot send a turn (voice spec FR 65)',
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [{
+          importNames: ['Drawer'],
+          message: 'Use components/DrawerHeader + drawerCloseProps with an existing drawer surface (issue #86 §0.10).',
+          name: 'antd',
+        }],
+        patterns: [{
+          group: ['**/transport', '**/AutopilotProvider'],
+          message: 'Nothing under Autopilot/voice/ may import the A2A transport or the provider\'s send(): dictation fills the textarea and ONLY the user pressing Send submits, so audio can never reach an agent as part of a turn (voice spec FR 11/65). What the transcription call needs from outside this fence — the portal bearer, the rate-limit detector, the session resume — is INJECTED by the rail through voiceStore.installTranscribeDeps().',
+        }],
+      }],
+    },
+  },
+
+  // The second half of FR 65, and it is STRICTLY NARROWER by one directory: speak-back may
+  // not import the transcription client either. Its spoken words must be a pure local
+  // transform of the text already written in the chat (FR 68) — never a separately
+  // generated summary — so a model call on that path must not compile. The dictation half
+  // one level up DOES import `transcribe.ts`; that is its whole job, and fencing it there
+  // would ban the feature rather than the failure mode.
+  {
+    files: ['src/components/Autopilot/voice/speak/**/*.{ts,tsx}'],
+    name: 'Speak-back cannot call a model (voice spec FR 68)',
     rules: {
       'no-restricted-imports': ['error', {
         paths: [{
@@ -536,7 +560,7 @@ export default tsEslint.config(
         }],
         patterns: [{
           group: ['**/transport', '**/AutopilotProvider', '**/transcribe'],
-          message: 'Nothing under Autopilot/voice/ may import the A2A transport, the provider\'s send(), or the transcription client: voice input never sends a turn, and speak-back never makes a model call (voice spec FR 65/68).',
+          message: 'Nothing under Autopilot/voice/speak/ may import the A2A transport, the provider\'s send(), or the transcription client: the spoken answer is a pure local transform of the exact words already written in the chat, never a second model call (voice spec FR 65/68).',
         }],
       }],
     },

@@ -89,6 +89,30 @@ export const SpeakerOffIcon = ({ className, size = 15 }: IconProps) => stroke(si
   </>
 ))
 
+// Dictation (voice spec FR 30): a capsule microphone on a stand. Its blocked state is the
+// same microphone struck through, so the two read as one control in two states — the same
+// pairing SpeakerIcon/SpeakerOffIcon uses above, for the same reason.
+export const MicIcon = ({ className, size = 14 }: IconProps) => stroke(size, className, (
+  <>
+    <rect height='11' rx='3' width='6' x='9' y='2' />
+    <path d='M5 11a7 7 0 0 0 14 0M12 18v3' />
+  </>
+))
+
+export const MicOffIcon = ({ className, size = 14 }: IconProps) => stroke(size, className, (
+  <>
+    <path d='M9 5a3 3 0 0 1 6 0v5m-6 1a3 3 0 0 0 5 2' />
+    <path d='M5 11a7 7 0 0 0 11 5M19 11a7 7 0 0 1-1 3.5M12 18v3' />
+    <path d='M3 3l18 18' />
+  </>
+))
+
+// The transcribing spinner: a 3/4 arc that the CSS rotates (no antd Spin — same reason the
+// rest of this file exists). Static under prefers-reduced-motion; see .apVoiceSpin.
+export const SpinnerIcon = ({ className, size = 14 }: IconProps) => stroke(size, className, (
+  <path d='M21 12a9 9 0 1 1-6.2-8.6' />
+))
+
 // The inverse of ExpandIcon — corners pointing inward — "restore width".
 export const ShrinkIcon = ({ className, size = 15 }: IconProps) => stroke(size, className, (
   <path d='M9 3v4a2 2 0 0 1-2 2H3M21 9h-4a2 2 0 0 1-2-2V3M3 15h4a2 2 0 0 1 2 2v4M15 21v-4a2 2 0 0 1 2-2h4' />

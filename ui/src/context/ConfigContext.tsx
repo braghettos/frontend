@@ -100,6 +100,17 @@ export interface Config {
      * preference, which defaults on. Independent of the capture half: speak-back needs no
      * microphone, no HTTPS and no transcription URL — only a local (on-device) voice. */
     AUTOPILOT_VOICE_SPEAK_BACK?: string
+    /** Where dictated audio is POSTed — a full absolute URL to an OpenAI-shaped
+     * `/chat/completions` on the agent gateway (the dedicated `/stt/v1` route when the
+     * platform ships it, `<gateway>/llm/v1/chat/completions` otherwise). ITS PRESENCE IS
+     * THE ON/OFF SWITCH (voice spec FR 4): absent or empty, the microphone control does
+     * not render and the composer's DOM is unchanged. Nothing is hard-coded — no default
+     * path, no derived origin — because the route is still with the platform team.
+     * Dictation ALSO requires `isSecureContext`, so this key alone does not enable it. */
+    AUTOPILOT_VOICE_TRANSCRIBE_URL?: string
+    /** The model that transcribes. Must be one the gateway routes to a backend that
+     * accepts an inline audio `file` part; defaults to `gemini-3.8-flash`. */
+    AUTOPILOT_VOICE_MODEL?: string
   }
   params: {
     FRONTEND_NAMESPACE: string

@@ -32,11 +32,11 @@
  *   - Emptying the draft returns it to `empty`, so the NEXT draft starts clean: a typed
  *     question that was deleted must not poison a subsequent dictated one.
  *
- * DICTATION DOES NOT EXIST YET. `appendDictatedSegment` is the seam the future capture
- * code will call (microphone capture needs a secure context, which no current Krateo
- * deployment has — see the voice spec §1.3). It is written, typed and unit-tested now so
- * that when transcription lands it has exactly one way in, and speak-back's trigger is
- * already correct on the day it starts firing.
+ * DICTATION NOW USES THIS SEAM. `voice/voiceStore.ts` calls `appendDictatedSegment` with
+ * each validated transcript and calls nothing else here — no DOM mutation of the textarea,
+ * which is what keeps the composer's OpenAPI paste capture from seeing a transcript as a
+ * pasted document. It remains the ONLY way words enter the draft other than the textarea's
+ * own `onChange`, which is what makes the lattice above decidable rather than guessed.
  *
  * NOT PERSISTED to localStorage, on purpose: a draft is in-flight user speech/typing, and
  * the voice spec (FR 39) allows only the transcript and the speak-back preference on disk.
@@ -70,7 +70,7 @@ export interface ComposerDraftStore {
    */
   setTypedDraft: (text: string) => void
   /**
-   * THE DICTATION SEAM (not yet called by anything — capture does not exist).
+   * THE DICTATION SEAM — called by `voice/voiceStore.ts`'s `commit()`, and by nothing else.
    *
    * Appends one finalized transcript segment after whatever is in the draft AT THE MOMENT
    * IT ARRIVES (voice spec FR 8), separated by a single space, and keeps the draft's
