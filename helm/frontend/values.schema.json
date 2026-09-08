@@ -674,6 +674,11 @@
           "type": "string",
           "title": "Autopilot Git Host",
           "default": "github.com"
+        },
+        "AUTOPILOT_VOICE_SPEAK_BACK": {
+          "type": "string",
+          "title": "Autopilot Voice Speak Back",
+          "default": "on"
         }
       },
       "default": {
@@ -693,7 +698,8 @@
         "AUTOPILOT_KOG_BUILDER_REPO": "krateo-platformops/krateo-oas",
         "AUTOPILOT_PUBLISH_VIA_GIT_PROVIDER": "true",
         "AUTOPILOT_GIT_SCM": "github",
-        "AUTOPILOT_GIT_HOST": "github.com"
+        "AUTOPILOT_GIT_HOST": "github.com",
+        "AUTOPILOT_VOICE_SPEAK_BACK": "on"
       }
     },
     "env": {

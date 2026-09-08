@@ -45,8 +45,9 @@ import { compilePublishOps, heldDraftIdentity, recordPagePreview, type PublishCo
 import { askPublishDestination, PublishTargetFormHost } from './publishTargetForm'
 import type { ThreadSummary } from './sessionHistoryStore'
 import { a2aAuthHeader, createEchoTransport, createKagentTransport } from './transport'
-import type { AutopilotActionChip, AutopilotFrame, AutopilotMessage, AutopilotTransport, EvidenceEntry, PageContextEnvelope } from './types'
+import type { AutopilotActionChip, AutopilotFrame, AutopilotMessage, AutopilotTransport, EvidenceEntry, PageContextEnvelope, TurnModality } from './types'
 import { buildContextDelta, useAutopilotContext } from './useAutopilotContext'
+import { autopilotSpeakBackStore } from './voice/speak/speakBackStore'
 
 interface AutopilotContextValue {
   /** Whether Autopilot is CONFIGURED (endpoint present / dev echo) — controls rail + toggle
@@ -66,8 +67,9 @@ interface AutopilotContextValue {
   messages: AutopilotMessage[]
   /** True while an assistant turn is streaming. */
   streaming: boolean
-  /** Send a user turn. No-op on empty text or while streaming. */
-  send: (text: string) => void
+  /** Send a user turn. No-op on empty text or while streaming. `modality` records HOW the
+   *  user asked (voice spec FR 67) — the sole trigger for speaking the answer back. */
+  send: (text: string, opts?: { modality?: TurnModality }) => void
   /** Abort the in-flight assistant turn, keeping the partial answer and thread intact. */
   stop: () => void
   /** Start a new thread: abort, ARCHIVE the current thread (if it has a user turn), fresh session id. */
@@ -229,7 +231,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // turn ends having applied NO proposal but whose text carries that error, finalize auto-recovers ONCE:
   // it re-prompts the model to re-issue the SAME action as fenced text. `sendRef` breaks the ordering
   // (send is declared after finalize); `recoveryCountRef` caps retries so a persistently-off turn can't loop.
-  const sendRef = useRef<((text: string, opts?: { recovery?: boolean }) => void) | undefined>(undefined)
+  const sendRef = useRef<((text: string, opts?: { modality?: TurnModality; recovery?: boolean }) => void) | undefined>(undefined)
   const recoveryCountRef = useRef(0)
 
   const transport: AutopilotTransport = useMemo(() => (endpoint && endpoint !== 'echo' ? createKagentTransport(endpoint) : createEchoTransport()), [endpoint])
@@ -239,6 +241,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   useEffect(() => () => {
     abortRef.current?.()
     approvalRef.current?.governor.dispose()
+    autopilotSpeakBackStore.cancel()
   }, [])
 
   // The docked rail's width as a :root CSS var (so body-portalled overlays like the Filters
@@ -250,7 +253,14 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // auto-apply the read-only proposals (from tool_call frames + fenced blocks) through
   // the REAL dispatcher, attaching a chip per applied action. The bridge denies any
   // non-read-only verb, so this never mutates.
-  const finalize = useCallback(async (assistantId: string) => {
+  // `modality` is THIS turn's own provenance (voice spec FR 67), handed down the same
+  // per-turn closure that carries `assistantId` — never read from shared state. That is not
+  // fastidiousness: finalize is async and sets streaming:false (re-enabling the composer)
+  // BEFORE it awaits `apply`, so a second turn can legitimately start while this one is
+  // suspended in a blast-radius confirm or a destination form. Any "how was the last turn
+  // asked" value read after that await belongs to the OTHER turn — which would read a typed
+  // answer aloud, the one thing the single-trigger rule forbids, and swallow the spoken one.
+  const finalize = useCallback(async (assistantId: string, modality: TurnModality) => {
     // A turn can receive `done` more than once (the `completed` status event AND the
     // transport's stream-close fallback). finalize() deletes the per-turn text buffer, so a
     // second run would read an empty buffer and WIPE the rendered answer. Finalize once.
@@ -441,7 +451,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     // asking — ONE hidden recovery turn; the every-turn PREVIEW SELF-CORRECTION directive drives the re-emit.
     if (chips.some((chip) => /^preview blocked — \d+ validation error/.test(chip.label)) && recoveryCountRef.current < 1) {
       recoveryCountRef.current += 1
-      setTimeout(() => sendRef.current?.(PREVIEW_SELF_CORRECTION_NUDGE, { recovery: true }), 0)
+      setTimeout(() => sendRef.current?.(PREVIEW_SELF_CORRECTION_NUDGE, { modality, recovery: true }), 0)
       return
     }
 
@@ -458,7 +468,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         setMessages((prev) => prev.map((message) => (message.id === assistantId ? { ...message, text: '↻ One moment — re-issuing that step correctly…' } : message)))
         const nudge = `Your previous turn tried to CALL \`${verb}\` as a function — it failed with "tool not found". \`${verb}\` is NOT a tool; it is a portal directive you REQUEST by WRITING a fenced code block in your reply TEXT (per the portal capabilities protocol you were given). Re-issue the SAME action now as a fenced portal directive block — do not call any tool by that name.`
         // Defer so finalize's state (streaming:false) commits before the recovery turn opens its bubble.
-        setTimeout(() => sendRef.current?.(nudge, { recovery: true }), 0)
+        setTimeout(() => sendRef.current?.(nudge, { modality, recovery: true }), 0)
         return
       }
 
@@ -483,7 +493,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
           ? 'the gitrefs + per-file repocontents (widget CRs + the nav fragment) + pullrequests set from the held page'
           : 'the gitrefs/repocontents/pullrequests set from the held tree'
         const nudge = `You approved publishing \`${heldName}\` but your reply contained NO portal-action fence, so nothing was proposed and no confirm dialog opened. Do NOT say the user "will be asked to confirm" — EMITTING the fence is ITSELF what opens the blast-radius dialog. Re-issue the PUBLISH step NOW as a single fenced \`\`\`portal-action block containing ONLY this one scalar verb: ${scalarVerb}. The portal fans that out into ${fanout} — you do NOT write those ops yourself.`
-        setTimeout(() => sendRef.current?.(nudge, { recovery: true }), 0)
+        setTimeout(() => sendRef.current?.(nudge, { modality, recovery: true }), 0)
         return
       }
 
@@ -495,7 +505,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       if (lastRestDef && approvedPublish) {
         recoveryCountRef.current += 1
         setMessages((prev) => prev.map((message) => (message.id === assistantId ? { ...message, text: '↻ One moment — opening the confirm…' } : message)))
-        setTimeout(() => sendRef.current?.(buildKogPublishNudge(lastRestDef, Boolean(oasStore.get()), builderTargets.kog), { recovery: true }), 0)
+        setTimeout(() => sendRef.current?.(buildKogPublishNudge(lastRestDef, Boolean(oasStore.get()), builderTargets.kog), { modality, recovery: true }), 0)
         return
       }
     }
@@ -511,9 +521,23 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       setTour(proposedTour)
       setTourOpen(true)
     }
+
+    // SPEAK-BACK (voice spec §3, FR 73). Here and nowhere else, for three reasons the
+    // provider's own code makes structural rather than stylistic:
+    //   1. Mid-stream text is `sanitizeChatText(next)` while the FINAL message is REPLACED
+    //      with `cleanedText` from parseAutopilotDirectives — different strings. Speaking the
+    //      stream would voice words the transcript then retracts.
+    //   2. `frame.replace` discards everything streamed so far, and speech cannot be un-said.
+    //   3. Every trampoline above RETURNS before this line, so a turn that is about to be
+    //      re-issued (its bubble now reading "↻ One moment…") is never spoken; the corrected
+    //      turn inherits the modality and is spoken instead.
+    // `chips` rides along because the action is NOT in `message.text` — a listener would
+    // otherwise never learn the answer proposes changing something (FR 71). The store decides
+    // whether anything is actually said: a typed turn is always silent.
+    autopilotSpeakBackStore.speakAnswer({ actions: chips, id: assistantId, modality, text: cleanedText })
   }, [apply, blueprintGate, blueprintStore, builderTargets, config, oasStore, previewGate, sessionId, setMessages])
 
-  const applyFrame = useCallback((assistantId: string, frame: AutopilotFrame) => {
+  const applyFrame = useCallback((assistantId: string, frame: AutopilotFrame, modality: TurnModality) => {
     switch (frame.kind) {
       case 'text': {
         const current = assistantTextRef.current.get(assistantId) ?? ''
@@ -552,7 +576,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         setStreaming(false)
         break
       case 'done':
-        void finalize(assistantId)
+        void finalize(assistantId, modality)
         break
       case 'require_approval': {
         // kagent paused on a `requireApproval` tool call (task → input-required).
@@ -589,7 +613,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       { actions: [{ label: chipLabel, readOnly: decision.type === 'reject', verb: 'approval' }], createdAt: Date.now(), id: assistantId, role: 'assistant', streaming: true, text: '' },
     ])
     setStreaming(true)
-    abortRef.current = transport.respondToApproval(decision, pause, { onFrame: (frame) => applyFrame(assistantId, frame) })
+    abortRef.current = transport.respondToApproval(decision, pause, { onFrame: (frame) => applyFrame(assistantId, frame, 'text') })
   }, [applyFrame, setMessages, transport])
 
   // Keep the governor-timeout path pointing at the CURRENT dispatchDecision (the
@@ -625,7 +649,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     [resolveApproval],
   )
 
-  const send = useCallback((text: string, opts?: { recovery?: boolean }) => {
+  const send = useCallback((text: string, opts?: { modality?: TurnModality; recovery?: boolean }) => {
     const trimmed = text.trim()
     const recovery = opts?.recovery === true
     // A user turn is blocked while a stream is in flight; an internal recovery turn is NOT (it fires from
@@ -639,7 +663,17 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
     if (!recovery) {
       lastUserTextRef.current = trimmed
       recoveryCountRef.current = 0
+      // A NEW USER TURN STOPS SPEECH (FR 75). Not just the ones the keyboard produced: a
+      // suggestion chip, a starter prompt and a purely-dictated draft all reach this line
+      // without a keystroke, and the composer's own onChange cancel never fires for them. The
+      // next turn's finalize also cancels, but that is a stream later — far too late to be the
+      // barge-in that the answer-still-talking user just asked for by asking something else.
+      autopilotSpeakBackStore.cancel()
     }
+    // A recovery turn INHERITS the modality of the turn it corrects (passed explicitly by
+    // finalize): the human asked once, by voice, and the corrected answer is still the answer to
+    // that question. Anything else — including an approval continuation — is a typed turn.
+    const modality: TurnModality = opts?.modality ?? 'text'
 
     const envelope = collect()
     const baseContext = buildContextDelta(envelope, autopilotConversationStore.getLastEnvelope())
@@ -652,11 +686,11 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       // A recovery turn carries no user bubble — the user never typed the nudge; they see only the
       // corrected assistant reply that follows the "re-issuing…" note.
       ...(recovery ? [] : [{ createdAt: now, id: randomId(), role: 'user' as const, text: trimmed }]),
-      { createdAt: now, id: assistantId, role: 'assistant', streaming: true, text: '' },
+      { createdAt: now, id: assistantId, modality, role: 'assistant', streaming: true, text: '' },
     ])
     setStreaming(true)
 
-    abortRef.current = transport.send({ context: baseContext, contextId, sessionId, text: trimmed }, { onFrame: (frame) => applyFrame(assistantId, frame) })
+    abortRef.current = transport.send({ context: baseContext, contextId, sessionId, text: trimmed }, { onFrame: (frame) => applyFrame(assistantId, frame, modality) })
   }, [applyFrame, collect, contextId, sessionId, setMessages, streaming, transport])
 
   // Keep the finalize-side recovery trampoline pointing at the CURRENT send closure.
@@ -678,6 +712,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   const teardownThread = useCallback(() => {
     abortRef.current?.()
     abortRef.current = null
+    autopilotSpeakBackStore.cancel()
     // DENY-BY-DEFAULT on thread reset: a pending approval is rejected (fire-and-forget,
     // no-op handlers — the new thread does not render the released task's stream) so
     // the paused kagent task is never left dangling toward an approve.

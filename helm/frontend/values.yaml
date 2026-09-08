@@ -211,6 +211,14 @@ config:
   # scheme (github | gitlab | bitbucket | ado). Default github.com; set for self-hosted / other SCMs.
   AUTOPILOT_GIT_SCM: github
   AUTOPILOT_GIT_HOST: github.com
+  # Autopilot SPEAK-BACK — reads an answer aloud when the question was asked BY VOICE (a
+  # composer draft made purely of dictated segments; one typed character and the turn is
+  # silent). ON by default; set "off" to remove the feature and its rail-header control on
+  # this install. Uses the BROWSER's speech synthesis with a LOCAL (on-device) voice only:
+  # no request leaves the browser, no microphone is opened, no HTTPS is required, and a
+  # machine with no local voice simply reports the feature unavailable rather than falling
+  # back to a cloud voice that would ship the answer text to a voice vendor.
+  AUTOPILOT_VOICE_SPEAK_BACK: "on"
 
 # ── Preview sandbox (portal-builder live preview; w4 spec Addendum A) ─────────
 # Provisions the quarantined namespace where the portal-builder applies DRAFT

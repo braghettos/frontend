@@ -14,7 +14,7 @@
  * driving/HITL surfaces are Phase 2/3.
  */
 
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import type { ClipboardEvent, KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
 import { CopyToClipboard } from 'react-copy-to-clipboard-ts'
 import { default as ReactMarkdown } from 'react-markdown'
@@ -25,12 +25,15 @@ import type { ApprovalPause } from './approval'
 import { useAutopilot } from './AutopilotProvider'
 import styles from './AutopilotRail.module.css'
 import AutopilotTour from './AutopilotTour'
+import { autopilotComposerDraftStore } from './composerDraftStore'
 import { describeArgs, deriveSessionsBase, fetchDelegationEvidence, serializeEvidence, summarizeEvidence } from './evidence'
 import { CheckIcon, CollapseIcon, CopyIcon, EvidenceIcon, ExpandIcon, EyeIcon, HistoryIcon, LinkIcon, PlusIcon, SendIcon, ShrinkIcon, SparkIcon, StopIcon } from './icons'
 import { looksLikeOpenApiDocument } from './oasAttachment'
 import { relativeTime, type ThreadSummary } from './sessionHistoryStore'
 import { a2aAuthHeader } from './transport'
 import type { AutopilotMessage, EvidenceEntry } from './types'
+import { SpeakBackStatus, SpeakBackToggle } from './voice/speak/SpeakBackControls'
+import { autopilotSpeakBackStore } from './voice/speak/speakBackStore'
 
 /** What the agent looked up, never what it read back. */
 const EvidenceRow = ({ entry }: { entry: EvidenceEntry }) => {
@@ -306,7 +309,12 @@ const getStoredRailWidth = (): number => {
 
 const AutopilotRail = () => {
   const { approvePending, attachOasDocument, clearOasAttachment, collect, denyPending, enabled, messages, newThread, oasAttachment, open, pendingApproval, restored, send, sessionId, sessions, setOpen, stop, streaming, switchToThread } = useAutopilot()
-  const [draft, setDraft] = useState('')
+  const { config } = useConfigContext()
+  // The composer draft + its PROVENANCE (purely dictated vs touched by the keyboard) live in
+  // a module-level store, not `useState`: a routerVersion remount used to wipe a half-written
+  // question, and speak-back's whole trigger is a property of HOW the draft was composed, so
+  // it has to survive the remount alongside the text. See composerDraftStore.ts.
+  const { text: draft } = useSyncExternalStore(autopilotComposerDraftStore.subscribe, autopilotComposerDraftStore.getSnapshot)
   // Session history (Vincenzo item P, split-view iteration): widens the rail to dock a thread
   // list beside the transcript (see .apRail.split). Local to the rail — not lifted into the
   // provider — because this component is also the SOLE owner of the `--autopilot-rail-width`
@@ -348,6 +356,24 @@ const AutopilotRail = () => {
     document.documentElement.style.setProperty('--autopilot-rail-width', width)
     return () => { document.documentElement.style.setProperty('--autopilot-rail-width', '0px') }
   }, [enabled, open, historyOpen, fullWidth, railWidth])
+
+  // Speak-back (voice spec §3). Three wires, all of them one-way into the store:
+  //  - the operator kill-switch (AUTOPILOT_VOICE_SPEAK_BACK: "off") removes the feature and
+  //    its control entirely, re-read whenever config loads;
+  //  - collapsing the rail stops speech (FR 75) — the answer is out of sight, so a voice
+  //    still reading it has nothing on screen to stop it;
+  //  - opening an unavailable rail says once, in the console, why nothing will be spoken
+  //    (FR 79) — the same courtesy the capture half owes an insecure context.
+  useEffect(() => {
+    autopilotSpeakBackStore.setConfigValue(config?.api.AUTOPILOT_VOICE_SPEAK_BACK)
+  }, [config])
+  useEffect(() => {
+    if (open) {
+      autopilotSpeakBackStore.logUnavailableOnce()
+    } else {
+      autopilotSpeakBackStore.cancel()
+    }
+  }, [open])
 
   // Drag-to-resize the rail from its left edge. The handle sits at x=0 inside `.apRail` (see
   // .apResizeHandle), so the rail's right edge — captured once at drag start — stays fixed for
@@ -394,14 +420,22 @@ const AutopilotRail = () => {
     if (!text || streaming) {
       return
     }
-    send(text)
-    setDraft('')
+    // Read the draft's provenance BEFORE clearing it: `voice` only when every word came from
+    // dictation. That stamp rides with the turn and is what decides, at finalize, whether the
+    // answer is also spoken (voice spec FR 67, with the owner's single-trigger override).
+    const modality = autopilotComposerDraftStore.turnModality()
+    autopilotComposerDraftStore.clear()
+    send(text, { modality })
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       submit()
+    }
+    // Escape stops a spoken answer (FR 75) without touching the draft or the thread.
+    if (event.key === 'Escape') {
+      autopilotSpeakBackStore.cancel()
     }
   }
 
@@ -467,6 +501,7 @@ const AutopilotRail = () => {
           <button aria-label='New thread' className={styles.apIc} onClick={newThread} title='New thread' type='button'>
             <PlusIcon />
           </button>
+          <SpeakBackToggle />
           <button
             aria-label={fullWidth ? 'Restore width' : 'Expand to full width'}
             aria-pressed={fullWidth}
@@ -552,10 +587,17 @@ const AutopilotRail = () => {
                 </div>
               ) : null}
               {oasError ? <div className={styles.apOasError}>{oasError}</div> : null}
+              <SpeakBackStatus />
               <div className={styles.apInput}>
                 <textarea
                   className={styles.apTextarea}
-                  onChange={(event) => setDraft(event.target.value)}
+                  onChange={(event) => {
+                    // Typing stops a spoken answer immediately (FR 75) and marks the draft
+                    // keyboard-touched for good — one character is enough to make this a
+                    // typed turn, which is never spoken back.
+                    autopilotSpeakBackStore.cancel()
+                    autopilotComposerDraftStore.setTypedDraft(event.target.value)
+                  }}
                   onKeyDown={onKeyDown}
                   onPaste={onPaste}
                   placeholder='Ask Autopilot to do something…'

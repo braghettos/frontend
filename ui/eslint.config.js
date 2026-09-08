@@ -514,5 +514,31 @@ export default tsEslint.config(
     files: ['src/widgets/Drawer/Drawer.tsx', 'src/components/Notifications/Notifications.tsx', 'src/components/Autopilot/previewSurface.tsx'],
     name: 'Allow raw antd Drawer in the shared drawer surfaces (#86 §0.10)',
     rules: { 'no-restricted-imports': 'off' },
+  },
+
+  // Voice spec FR 65/68 — the STRUCTURAL form of two invariants, so neither can be broken by
+  // a later edit that merely looks reasonable:
+  //   · voice INPUT can never send a turn on its own (only the human's Send press does), and
+  //   · SPEAK-BACK can never make a model call — the spoken words are a pure local transform
+  //     of the text already written in the chat, never a separately generated summary.
+  // A user hearing one account of what the agent found while the transcript records another
+  // has no way to know which one the agent will act on, and the transcript is what an incident
+  // review reads afterwards. Making the import fail turns that from a promise into a fact.
+  {
+    files: ['src/components/Autopilot/voice/**/*.{ts,tsx}'],
+    name: 'Voice cannot send a turn; speak-back cannot call a model (voice spec FR 65/68)',
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [{
+          importNames: ['Drawer'],
+          message: 'Use components/DrawerHeader + drawerCloseProps with an existing drawer surface (issue #86 §0.10).',
+          name: 'antd',
+        }],
+        patterns: [{
+          group: ['**/transport', '**/AutopilotProvider', '**/transcribe'],
+          message: 'Nothing under Autopilot/voice/ may import the A2A transport, the provider\'s send(), or the transcription client: voice input never sends a turn, and speak-back never makes a model call (voice spec FR 65/68).',
+        }],
+      }],
+    },
   }
 )
