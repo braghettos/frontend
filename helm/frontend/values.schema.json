@@ -653,7 +653,7 @@
         "AUTOPILOT_BLUEPRINT_BUILDER_REPO": {
           "type": "string",
           "title": "Autopilot Blueprint Builder Repo",
-          "default": "krateo-blueprints/blueprints"
+          "default": ""
         },
         "AUTOPILOT_KOG_BUILDER_REPO": {
           "type": "string",
@@ -704,7 +704,7 @@
         "PROVENANCE_ENABLED": "true",
         "PREVIEW_SANDBOX_NAMESPACE": "",
         "AUTOPILOT_PAGE_BUILDER_REPO": "krateo-platformops/portal",
-        "AUTOPILOT_BLUEPRINT_BUILDER_REPO": "krateo-blueprints/blueprints",
+        "AUTOPILOT_BLUEPRINT_BUILDER_REPO": "",
         "AUTOPILOT_KOG_BUILDER_REPO": "krateo-platformops/krateo-oas",
         "AUTOPILOT_PUBLISH_VIA_GIT_PROVIDER": "true",
         "AUTOPILOT_GIT_SCM": "github",
