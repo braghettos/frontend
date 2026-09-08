@@ -94,6 +94,12 @@ export interface Config {
      * Read below still keys on exactly "true" so an unset config (e.g. bare dev) stays on the safe
      * github path — the chart, not the code, carries the on-by-default. */
     AUTOPILOT_PUBLISH_VIA_GIT_PROVIDER?: string
+    /** Operator kill-switch for Autopilot SPEAK-BACK — reading an answer aloud when the
+     * question was asked by voice (voice spec FR 46/76). `"off"` removes the feature and its
+     * rail-header control entirely; any other value (absent/`"on"`) leaves it to the per-user
+     * preference, which defaults on. Independent of the capture half: speak-back needs no
+     * microphone, no HTTPS and no transcription URL — only a local (on-device) voice. */
+    AUTOPILOT_VOICE_SPEAK_BACK?: string
   }
   params: {
     FRONTEND_NAMESPACE: string

@@ -16,6 +16,14 @@ import type { ApprovalDecision, ApprovalPause } from './approval'
 export type AutopilotRole = 'user' | 'assistant'
 
 /**
+ * How the user ASKED a turn (voice spec FR 67). `voice` means the composer draft was
+ * composed purely of dictated segments with no manual typing mixed in — see
+ * composerDraftStore.ts for why that provenance is modelled explicitly rather than
+ * inferred. It is the sole trigger for speaking the answer back.
+ */
+export type TurnModality = 'voice' | 'text'
+
+/**
  * A single transcript message. `streaming` marks an assistant bubble still being
  * filled by the A2A stream. `actions`/`intent`/`confirm` are Phase-2/3 surfaces
  * (read-only action chips, "about to:" preview, HITL confirm) — optional here so
@@ -32,6 +40,17 @@ export interface AutopilotMessage {
   suggestions?: string[]
   /** The turn's source trace. Empty array = the turn used no tools. */
   evidence?: EvidenceEntry[]
+  /**
+   * How the user asked the turn this message belongs to (voice spec FR 67). Stamped on the
+   * assistant bubble at Send so the transcript RECORDS which turns were asked by voice —
+   * through a routerVersion remount, a thread switch and a page reload.
+   *
+   * It is a record, NOT the value speak-back reads. The live decision travels down the
+   * provider's per-turn frame closure (`send` → `applyFrame` → `finalize`), so it cannot be
+   * clobbered by a turn that starts while this one's finalize is suspended. Absent on
+   * messages predating the feature, which read as `text`: never speaking is the safe default.
+   */
+  modality?: TurnModality
   createdAt: number
 }
 

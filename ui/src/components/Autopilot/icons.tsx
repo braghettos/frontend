@@ -72,6 +72,23 @@ export const ExpandIcon = ({ className, size = 15 }: IconProps) => stroke(size, 
   <path d='M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3' />
 ))
 
+// Speak-back (voice spec FR 76): a speaker cone with sound waves — answers to SPOKEN
+// questions are read aloud. Its off state (below) is the same cone with the waves struck
+// through, so the two read as one control in two states rather than two different glyphs.
+export const SpeakerIcon = ({ className, size = 15 }: IconProps) => stroke(size, className, (
+  <>
+    <path d='M11 5L6 9H3v6h3l5 4z' />
+    <path d='M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13' />
+  </>
+))
+
+export const SpeakerOffIcon = ({ className, size = 15 }: IconProps) => stroke(size, className, (
+  <>
+    <path d='M11 5L6 9H3v6h3l5 4z' />
+    <path d='M16 9l5 6M21 9l-5 6' />
+  </>
+))
+
 // The inverse of ExpandIcon — corners pointing inward — "restore width".
 export const ShrinkIcon = ({ className, size = 15 }: IconProps) => stroke(size, className, (
   <path d='M9 3v4a2 2 0 0 1-2 2H3M21 9h-4a2 2 0 0 1-2-2V3M3 15h4a2 2 0 0 1 2 2v4M15 21v-4a2 2 0 0 1 2-2h4' />

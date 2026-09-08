@@ -847,3 +847,81 @@
   margin-left: 4px;
   padding-left: 8px;
 }
+
+/* ── speak-back (voice spec §3): the chrome for an answer being READ ALOUD. Colours are
+   the rail's own cyan accent — never --krateo-color-agent-signal-fill, which is Tier-2
+   locked to "Autopilot is EXECUTING" (issue #49) and this is not that. ── */
+
+/* FR 31's live region: always mounted, visually hidden. Its content duplicates what the
+   row below already shows sighted users, and the store keeps it EMPTY while speech plays
+   so a screen-reader user is not read the answer twice. */
+.apSrOnly {
+  border: 0;
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.apSpeak,
+.apSpeakNote {
+  align-items: center;
+  background: color-mix(in srgb, var(--cyan-color) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cyan-color) 30%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--gray-color);
+  display: flex;
+  font-size: 11px;
+  gap: 8px;
+  line-height: 1.5;
+  margin-bottom: 7px;
+  padding: 5px 8px;
+}
+
+/* A slow breathing dot: "audio is playing" with no motion large enough to distract, and
+   none at all when the user has asked for reduced motion (see the media query below). */
+.apSpeakPulse {
+  animation: apSpeakBreathe 1.6s ease-in-out infinite;
+  background: var(--cyan-color);
+  border-radius: 50%;
+  box-shadow: 0 0 5px 1px var(--cyan-color);
+  flex: none;
+  height: 6px;
+  width: 6px;
+}
+
+.apSpeakBtn {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--cyan-color) 35%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--cyan-color);
+  cursor: pointer;
+  font-size: 10.5px;
+  margin-left: auto;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.apSpeakBtn:hover {
+  background: color-mix(in srgb, var(--cyan-color) 12%, transparent);
+}
+
+.apSpeakNote .apSpeakBtn {
+  margin-left: auto;
+}
+
+@keyframes apSpeakBreathe {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apSpeakPulse {
+    animation: none;
+  }
+}
