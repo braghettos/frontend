@@ -150,13 +150,30 @@ export const AUDIO_TOKENS_FLOOR = 8
 export const MIN_RECORDING_SECONDS = 1
 
 /**
- * FR 61's text side: a DELIBERATELY GENEROUS upper bound on how many tokens the prompt's
- * text could have cost, at ~3.5 characters per token. Over-estimating the text makes the
- * gate stricter, so the error direction is a false rejection the user can retry — never a
- * fabrication that reaches the composer.
+ * FR 61's text side: an upper bound on how many tokens the prompt's text could have cost.
+ *
+ * MEASURED, not assumed. The first live call against /stt/v1 (2026-09-08) was REJECTED by this
+ * gate despite transcribing correctly, and the arithmetic says why:
+ *
+ *     promptTokens 380 · prompt 1229 chars · 3.91 s of audio
+ *     at 3.5 chars/token the text was estimated at 352, leaving 28 "audio" tokens
+ *     the floor demanded 8 x 3.91 = 31  ->  a real transcription refused by 3 tokens
+ *
+ * The model actually billed ~282 tokens for that text (~4.36 chars/token) and ~98 for the audio.
+ * Estimating text at 3.5 overstated it by ~70 tokens — more than twice the entire threshold — so
+ * the estimate's ERROR, not the audio, decided the outcome. An over-generous upper bound is only
+ * safe while it stays small relative to the floor; here it swamped it.
+ *
+ * 4.0 chars/token is the conservative middle: it still over-estimates real English prose, so the
+ * error direction remains a retryable false rejection rather than a fabrication, while leaving the
+ * signal intact. Checked against both live cases — real audio clears the floor by 41 tokens, and a
+ * response carrying NO audio still fails it by 57.
+ *
+ * If the system prompt grows substantially, re-run `transcribe.live.test.ts` and check the margin
+ * rather than trusting this constant: the estimate scales with the prompt, the floor does not.
  */
 export const textTokenEstimate = (totalPromptChars: number): number =>
-  Math.ceil(Math.max(0, totalPromptChars) / 3.5)
+  Math.ceil(Math.max(0, totalPromptChars) / 4.0)
 
 /** FR 61: did enough tokens arrive to account for real audio? */
 export const audioArrived = (

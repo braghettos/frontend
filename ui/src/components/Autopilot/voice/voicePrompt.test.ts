@@ -151,9 +151,21 @@ describe('the audio-arrival arithmetic (FR 61) — the only thing that separates
   })
 
   it('over-estimates the text side, so the error direction is a false rejection not a fabrication', () => {
-    // ~3.5 chars/token is generous: real tokenisers do better, so the estimate is high, the
-    // gate is strict, and a borderline call fails toward "try again".
-    expect(textTokenEstimate(350)).toBe(100)
+    // 4.0 chars/token still over-estimates real English prose, so the gate stays strict and a
+    // borderline call fails toward "try again". It was 3.5 until the first live call showed
+    // that over-estimating by ~70 tokens swamped a 31-token threshold and refused a correct
+    // transcript — the estimate's error must stay small relative to the floor.
+    expect(textTokenEstimate(350)).toBe(88)
     expect(textTokenEstimate(0)).toBe(0)
+  })
+  it('does not reject the real transcription measured live on 2026-09-08', () => {
+    // The exact numbers from the first live call: promptTokens 380, prompt 1229 chars, 3.91 s.
+    // At the original 3.5 chars/token this returned false and refused a correct transcript.
+    expect(audioArrived(380, 1229, 3.91)).toBe(true)
+  })
+
+  it('still refuses the same prompt when NO audio was billed', () => {
+    // Same prompt, audio absent: the model bills only the text (~282 tokens at the observed rate).
+    expect(audioArrived(282, 1229, 3.91)).toBe(false)
   })
 })
