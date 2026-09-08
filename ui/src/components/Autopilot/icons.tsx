@@ -117,3 +117,20 @@ export const SpinnerIcon = ({ className, size = 14 }: IconProps) => stroke(size,
 export const ShrinkIcon = ({ className, size = 15 }: IconProps) => stroke(size, className, (
   <path d='M9 3v4a2 2 0 0 1-2 2H3M21 9h-4a2 2 0 0 1-2-2V3M3 15h4a2 2 0 0 1 2 2v4M15 21v-4a2 2 0 0 1 2-2h4' />
 ))
+
+// The publish-follow card's exception icons (see PublishFollowPanel.tsx). AlertIcon is the FAILED
+// verdict — a triangle, distinct from the round approval/evidence glyphs so a failed publish is not
+// mistaken for a pending decision; ClockIcon is the honest "still running" bound.
+export const AlertIcon = ({ className, size = 13 }: IconProps) => stroke(size, className, (
+  <>
+    <path d='M10.3 3.6L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z' />
+    <path d='M12 9v4M12 17h.01' />
+  </>
+))
+
+export const ClockIcon = ({ className, size = 13 }: IconProps) => stroke(size, className, (
+  <>
+    <circle cx='12' cy='12' r='9' />
+    <path d='M12 7v5l3 2' />
+  </>
+))

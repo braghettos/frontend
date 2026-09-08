@@ -28,6 +28,7 @@ import { createBlueprintDraftStore } from './blueprintDraftStore'
 import { createBlueprintGate } from './blueprintGate'
 import { buildBlueprintPublishOps } from './blueprintPublish'
 import { buildClaimPublish } from './builderClaimPublish'
+import type { PublishFollowSeed } from './builderPublishStore'
 import { useBuilderTargets } from './builderTargets'
 import { autopilotConversationStore } from './conversationStore'
 import { recordToolFrame } from './evidence'
@@ -42,6 +43,7 @@ import { onFileEdit } from './previewFileEdit'
 import { buildKogPublishNudge, createPreviewGate, hydrateRestDefinitionOps } from './previewGate'
 import { AutopilotPreviewDrawer } from './previewSurface'
 import { compilePublishOps, heldDraftIdentity, recordPagePreview, type PublishCompileResult } from './publishCompile'
+import { pushPublishOutcome as pushPublishOutcomeChips } from './publishOutcome'
 import { askPublishDestination, PublishTargetFormHost } from './publishTargetForm'
 import type { ThreadSummary } from './sessionHistoryStore'
 import { a2aAuthHeader, createEchoTransport, createKagentTransport } from './transport'
@@ -318,17 +320,10 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
       // legacy github path, so existing installs are byte-identical. Flip on once git-provider + the
       // builder-publish composition are deployed.
       const publishViaClaim = config?.api.AUTOPILOT_PUBLISH_VIA_GIT_PROVIDER === 'true'
-      const pushPublishOutcome = async (compiled: PublishCompileResult, label: string | undefined, deepLink: string | null = null) => {
-        if (compiled.denial !== null) {
-          chips.push({ label: compiled.denial, readOnly: true, verb: 'applyResourceSet' })
-        } else if (compiled.ops) {
-          pushChip(await apply({ label, ops: compiled.ops, verb: 'applyResourceSet' }, origin))
-          if (deepLink) {
-            // Option A: the branch is pushed; the human opens the PR/MR in their own SCM.
-            chips.push({ label: 'Open change request', readOnly: true, url: deepLink, verb: 'openChangeRequest' })
-          }
-        }
-      }
+      // The publish outcome (denial → chip, declined confirm → nothing, dispatched claim → FOLLOW it
+      // and withhold the change-request link until the push actually lands) lives in publishOutcome.ts.
+      const pushPublishOutcome = (compiled: PublishCompileResult, label: string | undefined, deepLink: string | null = null, follow: PublishFollowSeed | null = null) =>
+        pushPublishOutcomeChips({ apply, chips, compiled, config, deepLink, follow, label, origin })
       if (proposal.verb === 'prefillForm') {
         // prefillForm sets provider state (not a dispatcher action): the mounted Form merges these into
         // its values; the user still reviews + submits via the form's own gate. Autopilot never submits.
@@ -362,6 +357,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         const overflow = isPage ? 'split the page across turns on the same branch' : 'trim the chart tree (large assets belong in a hosted values file)'
         let compiled: PublishCompileResult
         let deepLink: string | null = null
+        let follow: PublishFollowSeed | null = null
         if (!dest) {
           compiled = { denial: 'publish cancelled — destination not confirmed', ops: null }
         } else if (!held || !slug || !identity) {
@@ -374,6 +370,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
             const res = await buildClaimPublish({ builder, config, dest, files, gate: (ops) => blueprintGate.evaluate(ops, identity), namespace: 'krateo-system', origin, slug })
             compiled = res.compiled
             deepLink = res.deepLink
+            follow = res.follow
           }
         } else {
           const built = isPage ? buildPagePublishOps(targeted, held, slug) : buildBlueprintPublishOps(targeted, held, slug)
@@ -383,12 +380,12 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
             compiled = compilePublishOps(built, previewGate.evaluate(built), blueprintGate.evaluate(built, identity), oasStore.get(), held, origin)
           }
         }
-        await pushPublishOutcome(compiled, proposal.label, deepLink)
+        await pushPublishOutcome(compiled, proposal.label, deepLink, follow)
       } else if (proposal.verb === 'publishRestDef') {
         // FE-KOG-PR (item #30) — the controller builder publishes via a git PR (github) OR, when
         // AUTOPILOT_PUBLISH_VIA_GIT_PROVIDER is set, a BuilderPublish claim. The dispatch (destination
         // form + KOG preview gate + compile) is factored into dispatchKogPublish.
-        const { compiled, deepLink } = await dispatchKogPublish(proposal, {
+        const { compiled, deepLink, follow } = await dispatchKogPublish(proposal, {
           config,
           kogTarget: builderTargets.kog,
           oasText: oasStore.get()?.text ?? null,
@@ -396,7 +393,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
           previewGate,
           publishViaClaim,
         })
-        await pushPublishOutcome(compiled, proposal.label, deepLink)
+        await pushPublishOutcome(compiled, proposal.label, deepLink, follow)
       } else if (proposal.verb === 'applyResourceSet') {
         // Publish path, enforced HERE (finalize is the single entry point for model
         // proposals). Host-side checks BEFORE the bridge ever dispatches — a denial is the

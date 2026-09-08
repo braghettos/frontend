@@ -29,6 +29,8 @@ import { autopilotComposerDraftStore } from './composerDraftStore'
 import { describeArgs, deriveSessionsBase, fetchDelegationEvidence, serializeEvidence, summarizeEvidence } from './evidence'
 import { CheckIcon, CollapseIcon, CopyIcon, EvidenceIcon, ExpandIcon, EyeIcon, HistoryIcon, LinkIcon, PlusIcon, SendIcon, ShrinkIcon, SparkIcon, StopIcon } from './icons'
 import { looksLikeOpenApiDocument } from './oasAttachment'
+import PublishFollowPanel from './PublishFollowPanel'
+import { clampRailWidth, getStoredRailWidth, HISTORY_EXTRA_WIDTH, storeRailWidth } from './railWidth'
 import { relativeTime, type ThreadSummary } from './sessionHistoryStore'
 import { a2aAuthHeader } from './transport'
 import type { AutopilotMessage, EvidenceEntry } from './types'
@@ -291,25 +293,6 @@ const HistoryColumn = ({ currentSessionId, onSwitch, open, sessions }: {
   )
 }
 
-// User-resizable base width (the docked width before the history split's fixed +256px extra —
-// see HISTORY_EXTRA_WIDTH below — or the full-width override). Persisted across sessions the same
-// way ThemeModeContext persists its mode: read once at mount, written on drag-end only (not on
-// every pointermove, to avoid hammering localStorage mid-drag).
-const RAIL_WIDTH_STORAGE_KEY = 'krateo-autopilot-rail-width'
-const RAIL_MIN_WIDTH = 320
-const RAIL_MAX_WIDTH = 720
-const RAIL_DEFAULT_WIDTH = 384
-// Kept equal to 640 - 384, the pre-resize .apRail.open.split delta, so a never-resized rail is
-// byte-identical to the old fixed-width behavior.
-const HISTORY_EXTRA_WIDTH = 256
-
-const clampRailWidth = (value: number) => Math.min(RAIL_MAX_WIDTH, Math.max(RAIL_MIN_WIDTH, value))
-
-const getStoredRailWidth = (): number => {
-  const stored = Number(localStorage.getItem(RAIL_WIDTH_STORAGE_KEY))
-  return Number.isFinite(stored) && stored > 0 ? clampRailWidth(stored) : RAIL_DEFAULT_WIDTH
-}
-
 const AutopilotRail = () => {
   const { approvePending, attachOasDocument, clearOasAttachment, collect, denyPending, enabled, messages, newThread, oasAttachment, open, pendingApproval, restored, send, sessionId, sessions, setOpen, stop, streaming, switchToThread } = useAutopilot()
   const { config } = useConfigContext()
@@ -403,7 +386,7 @@ const AutopilotRail = () => {
       document.body.style.userSelect = ''
       setResizing(false)
       setRailWidth((current) => {
-        localStorage.setItem(RAIL_WIDTH_STORAGE_KEY, String(current))
+        storeRailWidth(current)
         return current
       })
     }
@@ -594,6 +577,12 @@ const AutopilotRail = () => {
               ) : (
                 messages.map((message) => <MessageBubble key={message.id} message={message} />)
               )}
+
+              {/* Publish follow-up. Docked in the transcript flow (not the composer) because it is
+                  an OUTCOME, not a control: it belongs where the turn that started the publish is,
+                  and it must still be there — live — after a routerVersion remount, which is why
+                  its state lives in a module-level store rather than in this component. */}
+              <PublishFollowPanel />
 
               {pendingApproval ? (
                 <ApprovalCard onApprove={approvePending} onDeny={denyPending} pause={pendingApproval} />

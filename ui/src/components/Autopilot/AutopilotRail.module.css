@@ -1098,3 +1098,179 @@
     transition: none;
   }
 }
+
+/* ── publish follow (PublishFollowPanel.tsx): the card that says what a BuilderPublish claim is
+   ACTUALLY doing. Four accents, all from the theme's own tokens and NEVER
+   --krateo-color-agent-signal-fill, which is Tier-2 locked to "Autopilot is executing" (issue #49):
+   a git push grinding away on the cluster is not the agent streaming, and borrowing that token
+   would make an eight-minute clone indistinguishable from a live reply.
+     pending  --primary-color (the rail's own working accent)
+     pushed   NEUTRAL — the healthy state gets no status colour (house rule: indicators are
+              exception-only); the card is chrome around the link it finally earned
+     failed   --red-color
+     stalled / unreadable  --amber-color: attention, explicitly NOT an error verdict ── */
+
+.apPubPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.apPub {
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--gray-color);
+  display: flex;
+  flex-direction: column;
+  font-size: 11.5px;
+  gap: 5px;
+  line-height: 1.5;
+  padding: 7px 9px;
+}
+
+.apPubPending {
+  background: color-mix(in srgb, var(--primary-color) 6%, transparent);
+  border-color: color-mix(in srgb, var(--primary-color) 26%, transparent);
+  border-left-color: var(--primary-color);
+}
+
+.apPubPushed {
+  border-left-color: color-mix(in srgb, var(--gray-color) 45%, transparent);
+}
+
+.apPubFailed {
+  background: color-mix(in srgb, var(--red-color) 8%, transparent);
+  border-color: color-mix(in srgb, var(--red-color) 30%, transparent);
+  border-left-color: var(--red-color);
+}
+
+.apPubWaiting {
+  background: color-mix(in srgb, var(--amber-color) 8%, transparent);
+  border-color: color-mix(in srgb, var(--amber-color) 30%, transparent);
+  border-left-color: var(--amber-color);
+}
+
+.apPubHead {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.apPubTitle {
+  color: var(--dark-color);
+  font-weight: 600;
+}
+
+.apPubDest {
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The elapsed clock. Tabular figures so a ticking duration does not jitter the row width — the
+   whole point of this element is that it visibly MOVES, and a jumping layout reads as a glitch. */
+.apPubElapsed {
+  color: var(--gray-color);
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.apPubSpin {
+  animation: apVoiceSpin 900ms linear infinite;
+  color: var(--primary-color);
+  flex: none;
+}
+
+.apPubOk {
+  color: var(--success-color);
+  flex: none;
+}
+
+.apPubBad {
+  color: var(--red-color);
+  flex: none;
+}
+
+.apPubWarn {
+  color: var(--amber-color);
+  flex: none;
+}
+
+.apPubBranch {
+  color: var(--dark-color);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.apPubNote {
+  color: var(--gray-color);
+  font-size: 10.5px;
+}
+
+/* A class, not a `.apPubNote code` descendant selector: the rail's markdown block already styles
+   `code` at a deeper specificity, and a descending-specificity override is how widget CSS has
+   silently lost to antd before. */
+.apPubChild {
+  font-family: var(--font-mono);
+}
+
+/* The failing child's own message, verbatim. Selectable, wrapping, never clamped: this is the one
+   sentence that explains the failure, and truncating it is how the original report happened. */
+.apPubMsg {
+  background: color-mix(in srgb, var(--red-color) 10%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--dark-color);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  padding: 6px 8px;
+  user-select: text;
+  white-space: pre-wrap;
+}
+
+.apPubActions {
+  display: flex;
+  gap: 8px;
+}
+
+.apPubActions:empty {
+  display: none;
+}
+
+.apPubLink {
+  color: var(--primary-color);
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.apPubLink:hover {
+  text-decoration: underline;
+}
+
+.apPubBtn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--gray-color);
+  cursor: pointer;
+  font-size: 10.5px;
+  padding: 2px 8px;
+}
+
+.apPubBtn:hover {
+  border-color: color-mix(in srgb, var(--primary-color) 45%, transparent);
+  color: var(--primary-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apPubSpin {
+    animation: none;
+  }
+}

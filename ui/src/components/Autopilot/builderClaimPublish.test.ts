@@ -127,3 +127,43 @@ describe('buildClaimPublish', () => {
     expect(res.deepLink).toContain('https://github.com/acme/my-blueprint/compare/')
   })
 })
+
+describe('buildClaimPublish — the follow seed (publish visibility)', () => {
+  beforeEach(() => { vi.stubGlobal('fetch', okFetch(COMPDEF)) })
+  afterEach(() => { vi.unstubAllGlobals() })
+
+  it('returns the coordinates for WATCHING the claim: name, namespace, destination, file count', async () => {
+    const res = await buildClaimPublish({
+      builder: 'blueprint',
+      config: cfg({ AUTOPILOT_BLUEPRINT_BUILDER_REPO: 'krateo-blueprints/ignored' }),
+      dest: { owner: 'krateo-blueprints', repo: 'blueprints' },
+      files: [...files, { content: 'name: x\n', path: 'chart/Chart.yaml' }],
+      gate: allow,
+      namespace: 'krateo-system',
+      origin,
+      slug: 'my-chart',
+    })
+    expect(res.follow).toEqual({
+      branch: 'builder/my-chart',
+      claimName: 'publish-my-chart',
+      deepLink: 'https://github.com/krateo-blueprints/blueprints/compare/main...builder/my-chart?expand=1',
+      destination: 'krateo-blueprints/blueprints',
+      // one git-provider LocalResource per committed file — the MINIMUM the composition renders
+      expectedChildren: 2,
+      namespace: 'krateo-system',
+    })
+  })
+
+  it('carries no follow seed on a denial — there is nothing to watch', async () => {
+    const denied = await buildClaimPublish({
+      builder: 'blueprint', config: cfg({ AUTOPILOT_BLUEPRINT_BUILDER_REPO: 'acme/bp' }), dest: null, files, gate: deny, namespace: 'krateo-system', origin, slug: 'foo',
+    })
+    expect(denied.follow).toBeNull()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }))
+    const noGvr = await buildClaimPublish({
+      builder: 'blueprint', config: cfg({ AUTOPILOT_BLUEPRINT_BUILDER_REPO: 'acme/bp' }), dest: null, files, gate: allow, namespace: 'krateo-system', origin, slug: 'foo',
+    })
+    expect(noGvr.compiled.denial).toBe(BUILDER_PUBLISH_GVR_DENIAL)
+    expect(noGvr.follow).toBeNull()
+  })
+})
