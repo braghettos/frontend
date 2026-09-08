@@ -108,9 +108,12 @@ describe('formatElapsed', () => {
 })
 
 describe('PublishFollowPanel', () => {
-  it('renders nothing when no publish is being followed', () => {
-    const { queryByTestId } = render(<PublishFollowPanel />)
-    expect(queryByTestId('autopilot-publish-panel')).toBeNull()
+  it('shows no card when no publish is being followed (the live region is mounted, and empty)', () => {
+    const view = render(<PublishFollowPanel />)
+    expect(view.queryByTestId('autopilot-publish-card')).toBeNull()
+    // The region itself IS present, so the first card that arrives is announced rather than
+    // appearing together with the region and going unread.
+    expect(view.getByTestId('autopilot-publish-panel').children).toHaveLength(0)
   })
 
   it('IN FLIGHT: says it is publishing, shows the destination + branch, and offers NO link yet', async () => {
@@ -165,10 +168,38 @@ describe('PublishFollowPanel', () => {
     expect(card.textContent).toContain('Still running')
     expect(card.textContent).toContain('nothing has failed')
     expect(card.textContent).not.toContain('Publish failed')
+    // The link IS offered here — but never as a change request that exists.
     expect(view.queryByText('Open change request')).toBeNull()
+    const hedged = view.getByText('Open change request (only exists if the push landed)') as HTMLAnchorElement
+    expect(hedged.getAttribute('href')).toBe(TARGET.deepLink)
     // Check again resumes the watch rather than leaving the user with a dead card.
     fireEvent.click(view.getByText('Check again'))
     expect(view.getByTestId('autopilot-publish-card').getAttribute('data-phase')).toBe('pending')
+  })
+
+  it('A STALL WITH NOTHING RENDERED says so, instead of claiming a publish is progressing', async () => {
+    const clock = fakeDeps({})
+    const view = render(<PublishFollowPanel />)
+    autopilotPublishStore.follow(TARGET, { budgetMs: 1, deps: clock.deps })
+    await clock.settle()
+    await clock.pump()
+    const card = view.getByTestId('autopilot-publish-card')
+    expect(card.getAttribute('data-phase')).toBe('stalled')
+    expect(card.textContent).toContain('No git resources have been rendered')
+    expect(card.textContent).not.toContain('keeps going on the cluster')
+    expect(card.textContent).not.toContain('Publish failed')
+  })
+
+  it('KEEPS THE AGE ON SCREEN after Check again — the card must not restart at 0s', async () => {
+    const clock = fakeDeps({})
+    const view = render(<PublishFollowPanel />)
+    autopilotPublishStore.follow(TARGET, { budgetMs: 1, deps: clock.deps })
+    await clock.settle()
+    await clock.pump()
+    expect(view.getByTestId('autopilot-publish-card').getAttribute('data-phase')).toBe('stalled')
+    const before = autopilotPublishStore.getSnapshot()[0].startedAt
+    fireEvent.click(view.getByText('Check again'))
+    expect(autopilotPublishStore.getSnapshot()[0].startedAt).toBe(before)
   })
 
   it('UNMOUNTED MID-POLL: no stuck spinner, no lying success — the remount shows the real outcome', async () => {
@@ -196,7 +227,7 @@ describe('PublishFollowPanel', () => {
     autopilotPublishStore.follow(TARGET, { deps: clock.deps })
     await clock.settle()
     fireEvent.click(view.getByLabelText('Dismiss this publish'))
-    expect(view.queryByTestId('autopilot-publish-panel')).toBeNull()
+    expect(view.queryByTestId('autopilot-publish-card')).toBeNull()
     expect(clock.pending()).toBe(0)
   })
 })

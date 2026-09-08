@@ -35,11 +35,29 @@ import type { ApplyResourceSetGvr } from './applyResourceSet'
  */
 export const LOCAL_RESOURCE_GVR: ApplyResourceSetGvr = { group: 'git.krateo.io', resource: 'localresources', version: 'v1alpha1' }
 
-/** The composition's child naming: `<claim-name>-000`, `-001`, … (zero-padded to three). */
+/**
+ * The composition's child naming: `<claim-name>-000`, `-001`, … (zero-padded to three).
+ *
+ * A DECLARED RESIDUAL, because the names are deterministic and so is the claim name
+ * (`publish-<slug>`): if a claim were deleted and immediately re-POSTed, its predecessor's children
+ * could still exist for the moment before garbage collection, and a sweep would read them as this
+ * publish's. What closes the realistic path is the dispatch gate in publishOutcome.ts — a POST onto
+ * an existing claim is a 409 and no longer starts a follow at all, so stale children cannot
+ * accompany an accepted publish of the same name. The two remedies reviewed for the remaining
+ * window were both worse than it: a randomised claim name changes the composition's identity (a
+ * behaviour change well outside a visibility fix, and it would strand the existing claim per slug),
+ * and a `creationTimestamp` watermark compares the BROWSER's clock to the apiserver's, so a few
+ * seconds of skew would turn every healthy publish into a permanent non-success.
+ */
 export const childResourceName = (claimName: string, index: number): string =>
   `${claimName}-${String(index).padStart(3, '0')}`
 
-/** The condition types that carry a git-provider LocalResource's verdict, in priority order. */
+/**
+ * The condition types that carry a git-provider LocalResource's verdict, in priority order. The
+ * FIRST present one is authoritative: git-provider sets `Synced` from the observe/apply it actually
+ * performed (that is the condition the incident's message rode on), while `Ready` is the
+ * crossplane-style availability flag, which is legitimately `False` for a beat after creation.
+ */
 const VERDICT_CONDITIONS = ['Synced', 'Ready']
 
 /** One child's verdict, reduced from its `status.conditions[]`. */
@@ -67,33 +85,54 @@ const conditionsOf = (child: unknown): Record<string, unknown>[] => {
 const str = (value: unknown): string | undefined => (typeof value === 'string' && value !== '' ? value : undefined)
 
 /**
- * Reduce ONE fetched LocalResource to its verdict. `Synced` wins over `Ready` when both are
- * present (git-provider sets Synced from the observe/apply it actually performed); an absent or
- * `Unknown` condition is neither ready nor failed — it is still working, which is the whole point
- * of distinguishing "ninety seconds pending" from "twelve hours stuck".
+ * Reduce ONE fetched LocalResource to its verdict. An absent or `Unknown` condition is neither
+ * ready nor failed — it is still working, which is the whole point of distinguishing "ninety
+ * seconds pending" from "twelve hours stuck".
+ *
+ * THE TWO CONDITIONS ARE READ ASYMMETRICALLY, ON PURPOSE:
+ *   • FAILURE comes only from the AUTHORITATIVE condition (`Synced` when present, else `Ready`).
+ *     A secondary `Ready: False` is routinely just "not available yet" one reconcile after create,
+ *     and calling that a failed publish would fabricate exactly the kind of lie this change exists
+ *     to remove — only in the other direction.
+ *   • SUCCESS requires EVERY present verdict condition to say `True`. Taking the first condition and
+ *     discarding the rest is how a resource asserting health on one condition and failure on
+ *     another gets scored healthy — which is the parent-`Ready`-over-failing-children bug reproduced
+ *     one level down. When the conditions disagree we refuse to pick the cheerful one: the child
+ *     stays "still working", the publish stays pending, and the bound reports it honestly.
  */
 export const readChildSync = (name: string, child: unknown): ChildSyncState => {
   const conditions = conditionsOf(child)
-  const verdict = VERDICT_CONDITIONS
+  const present = VERDICT_CONDITIONS
     .map((type) => conditions.find((condition) => condition.type === type))
-    .find((condition) => condition !== undefined)
+    .filter((condition): condition is Record<string, unknown> => condition !== undefined)
+  const [verdict] = present
   if (!verdict) {
     return { failed: false, name, ready: false }
   }
-  const status = str(verdict.status)
   return {
-    failed: status === 'False',
+    failed: str(verdict.status) === 'False',
     message: str(verdict.message),
     name,
-    ready: status === 'True',
+    ready: present.every((condition) => str(condition.status) === 'True'),
     reason: str(verdict.reason),
   }
 }
 
 /** What one sweep of the child name series found. */
 export interface ChildSweep {
-  /** The contiguous children that exist right now (a 404 ends the series). */
+  /** The contiguous children that exist right now (a 404 or an unreadable name ends the series). */
   children: ChildSyncState[]
+  /**
+   * A failing child seen ANYWHERE in the probed window, including past the end of the contiguous
+   * prefix. A flaky read on `-000` must not bury an already-fetched `-001` that is carrying the
+   * sentence the user needs: evidence we have read is never thrown away for being out of order.
+   */
+  brokenChild?: ChildSyncState
+  /**
+   * True when the prefix consumed the WHOLE probe window — the series may continue past what we
+   * looked at, so the set is not known to be complete and success must not be declared from it.
+   */
+  truncated?: boolean
   /** A NON-404 read failure (snowplow down, RBAC 403, network) from the last sweep. Never a
    *  failure verdict on its own — we could not see, which is not the same as a broken publish. */
   transportError?: string
@@ -154,9 +193,11 @@ export const reducePublishVerdict = (args: {
   budgetMs: number
 }): PublishVerdict => {
   const { budgetMs, elapsedMs, expectedMin, stableSweeps, sweep } = args
-  const { children, transportError } = sweep
+  const { children, transportError, truncated } = sweep
   const ready = children.filter((child) => child.ready).length
-  const broken = children.find((child) => child.failed)
+  // A child that failed anywhere in the probed window wins, even if it sits past the contiguous
+  // prefix: a read blip on an earlier name is no reason to withhold a failure we already have.
+  const broken = sweep.brokenChild ?? children.find((child) => child.failed)
   if (broken) {
     return {
       failure: {
@@ -172,7 +213,11 @@ export const reducePublishVerdict = (args: {
     }
   }
   const complete = children.length >= Math.max(1, expectedMin) && ready === children.length && children.length > 0
-  if (complete && stableSweeps >= STABLE_SWEEPS_REQUIRED) {
+  // SUCCESS IS ONLY DECLARED FROM A COMPLETE READ. `transportError` means a name in the window came
+  // back 403/500 — the child behind it may be the failing one. `truncated` means every probed name
+  // existed, so the series may run past the window we looked at. Either way we do not know the set
+  // is whole, and "we did not see a failure in the part we could read" is not a push.
+  if (complete && stableSweeps >= STABLE_SWEEPS_REQUIRED && !transportError && !truncated) {
     return { phase: 'pushed', ready, total: children.length }
   }
   if (elapsedMs >= budgetMs) {
@@ -183,3 +228,20 @@ export const reducePublishVerdict = (args: {
 
 /** True once the phase will not change on its own — the follower stops and the rail stops spinning. */
 export const isTerminalPhase = (phase: PublishFollowPhase): boolean => phase !== 'pending'
+
+/**
+ * "8s" · "2m 14s" · "1h 03m" — coarse on purpose; this is a duration, not a stopwatch. It lives in
+ * the pure module because BOTH surfaces that must tell ninety seconds from twelve hours use it: the
+ * card's live clock and the transcript sentence the card's dismissal leaves behind.
+ */
+export const formatElapsed = (ms: number): string => {
+  const seconds = Math.max(0, Math.floor(ms / 1000))
+  if (seconds < 60) {
+    return `${seconds}s`
+  }
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) {
+    return `${minutes}m ${String(seconds % 60).padStart(2, '0')}s`
+  }
+  return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`
+}

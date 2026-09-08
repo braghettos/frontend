@@ -9,9 +9,11 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   CHILD_PROBE_SLACK,
   FOLLOW_BUDGET_MS,
+  MAX_CHILD_PROBE_SLACK,
   followConfig,
   followKey,
   followPublish,
+  maxProbeWindow,
   sweepPublishChildren,
   type FollowDeps,
   type PublishFollowState,
@@ -151,6 +153,26 @@ describe('sweepPublishChildren', () => {
     expect(sweep.children).toHaveLength(0)
     expect(sweep.transportError).toBe('read failed (HTTP 403)')
   })
+
+  it('A BLIP ON -000 DOES NOT BURY -001: the failure it already read is still reported', async () => {
+    const objects = { ...children(3, 'True'), 'publish-my-chart-001': localResource('False', CLONE_FAILURE) }
+    const fetchImpl = fakeFetch(objects, (name) => (name.endsWith('-000') ? { ok: false, status: 502 } as Response : null))
+    const { deps } = fakeClock(fetchImpl)
+    const sweep = await sweepPublishChildren(TARGET, deps)
+    // The contiguous prefix is empty (we could not read -000) — but the evidence is not discarded.
+    expect(sweep.children).toHaveLength(0)
+    expect(sweep.transportError).toBe('read failed (HTTP 502)')
+    expect(sweep.brokenChild?.name).toBe('publish-my-chart-001')
+    expect(sweep.brokenChild?.message).toBe(CLONE_FAILURE)
+  })
+
+  it('flags a SATURATED window rather than treating it as the end of the series', async () => {
+    // Every probed name exists: the series may continue past the window, so the sweep says so.
+    const fetchImpl = fakeFetch(children(TARGET.expectedChildren + CHILD_PROBE_SLACK, 'True'))
+    const { deps } = fakeClock(fetchImpl)
+    const sweep = await sweepPublishChildren(TARGET, deps)
+    expect(sweep.truncated).toBe(true)
+  })
 })
 
 describe('followPublish', () => {
@@ -254,6 +276,69 @@ describe('followPublish', () => {
       handle.cancel()
       handle.cancel()
     }).not.toThrow()
+  })
+
+  it('MORE CHILDREN THAN FILES: it widens the window instead of declaring success from a full one', async () => {
+    // A 3-file claim whose composition rendered SIX objects, the sixth broken. The first window is
+    // 3 + slack = 5 names, and all five are healthy — the exact shape that reports "Pushed" if a
+    // saturated window is read as the end of the series, while `-005` sits on the clone error.
+    const objects = { ...children(6, 'True'), 'publish-my-chart-005': localResource('False', CLONE_FAILURE) }
+    const clock = fakeClock(fakeFetch(objects))
+    const states: PublishFollowState[] = []
+    followPublish(TARGET, (state) => states.push(state), clock.deps)
+    await clock.settle()
+    // Sweep 1: five for five, all Synced, count settled — and still NOT pushed, because the window
+    // was saturated and we do not know it is the whole series.
+    expect(states[states.length - 1].phase).toBe('pending')
+    // Sweep 2 looks further and finds the child that was there all along.
+    await drain(clock.pump)
+    const final = states[states.length - 1]
+    expect(final.phase).toBe('failed')
+    expect(final.failure?.child).toBe('publish-my-chart-005')
+    expect(final.failure?.message).toBe(CLONE_FAILURE)
+  })
+
+  it('the window stops growing at the cap', () => {
+    expect(maxProbeWindow(3)).toBe(3 + MAX_CHILD_PROBE_SLACK)
+    expect(maxProbeWindow(0)).toBe(1 + MAX_CHILD_PROBE_SLACK)
+  })
+
+  it('CANCEL WHILE A READ IS IN FLIGHT emits nothing after the response lands', async () => {
+    // An object property, not a `let`: TS does not track an assignment made inside the executor.
+    const gate: { open: () => void } = { open: () => undefined }
+    const blocked = new Promise<void>((resolve) => { gate.open = resolve })
+    const fetchImpl = vi.fn(async () => {
+      await blocked
+      return { json: () => Promise.resolve(localResource('True')), ok: true, status: 200 } as Response
+    })
+    const clock = fakeClock(fetchImpl)
+    const states: PublishFollowState[] = []
+    const handle = followPublish(TARGET, (state) => states.push(state), clock.deps)
+    expect(states).toHaveLength(1)
+    // Cancelled with the sweep's fetches genuinely unresolved, then the responses arrive.
+    handle.cancel()
+    gate.open()
+    await clock.settle()
+    await clock.settle()
+    expect(states).toHaveLength(1)
+    expect(clock.pending()).toBe(0)
+  })
+
+  it('CHECK AGAIN keeps the publish\'s own age: a fresh budget, not a fresh clock', async () => {
+    const clock = fakeClock(fakeFetch({}))
+    const states: PublishFollowState[] = []
+    // A publish that started twelve hours before this watch — what `recheck` passes back in.
+    const twelveHoursAgo = clock.deps.now() - 12 * 3_600_000
+    followPublish(TARGET, (state) => states.push(state), clock.deps, 20000, twelveHoursAgo)
+    await clock.settle()
+    // The budget is measured from the WATCH (still pending), the age from the PUBLISH (12h).
+    expect(states[states.length - 1].phase).toBe('pending')
+    expect(states[states.length - 1].startedAt).toBe(twelveHoursAgo)
+    await drain(clock.pump)
+    const final = states[states.length - 1]
+    expect(final.phase).toBe('stalled')
+    expect(final.updatedAt - final.startedAt).toBeGreaterThanOrEqual(12 * 3_600_000)
+    expect(final.updatedAt - final.watchStartedAt).toBeLessThan(60000)
   })
 
   it('defaults to a five-minute budget', () => {

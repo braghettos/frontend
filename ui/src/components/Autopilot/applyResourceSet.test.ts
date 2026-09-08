@@ -204,7 +204,7 @@ describe('A.3 carve-out matrix — widgets/restactions DENY except the exact san
     const sandboxed = makeDeps()
     const chip = await applyResourceSet(makeProposal([WIDGET_OP, RESTACTION_OP]), { ...sandboxed.deps, sandboxNamespace: SANDBOX })
     expect(sandboxed.handleActionSet).toHaveBeenCalledTimes(1)
-    expect(chip).toEqual({ label: 'apply 2 objects', readOnly: false, verb: 'applyResourceSet' })
+    expect(chip).toEqual({ label: 'apply 2 objects', ok: true, readOnly: false, verb: 'applyResourceSet' })
 
     const unconfigured = makeDeps()
     expect(await applyResourceSet(makeProposal([WIDGET_OP, RESTACTION_OP]), unconfigured.deps)).toBeNull()
@@ -271,7 +271,7 @@ describe('applyResourceSet — dispatch through the W0-4 gate', () => {
     ])
 
     // The returned chip marks a MUTATION (readOnly:false).
-    expect(chip).toEqual({ label: 'apply 3 objects', readOnly: false, verb: 'applyResourceSet' })
+    expect(chip).toEqual({ label: 'apply 3 objects', ok: true, readOnly: false, verb: 'applyResourceSet' })
   })
 
   it('uses the proposal label when given', async () => {

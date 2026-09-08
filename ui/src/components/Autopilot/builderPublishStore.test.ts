@@ -9,10 +9,13 @@ import type { FollowDeps, PublishFollowState, PublishFollowTarget } from './buil
 import { childResourceName } from './builderPublishStatus'
 import {
   MAX_TRACKED_PUBLISHES,
+  createPublishAnnouncer,
   createPublishFollowStore,
+  publishSettlementActions,
   publishSettlementText,
   startPublishFollow,
 } from './builderPublishStore'
+import { autopilotConversationStore } from './conversationStore'
 
 const CLONE_FAILURE = 'observe failed: failed to clone repository: authentication required: invalid credentials'
 
@@ -149,6 +152,22 @@ describe('createPublishFollowStore', () => {
     store.reset()
   })
 
+  it('RECHECK KEEPS THE PUBLISH\'S AGE — the affordance a stuck publish offers must not hide how stuck it is', async () => {
+    const { deps, pump, settle } = fakeDeps({})
+    const store = createPublishFollowStore(deps)
+    store.follow(target(), { budgetMs: 1 })
+    await settle()
+    const [initial] = store.getSnapshot()
+    await pump()
+    expect(store.getSnapshot()[0].phase).toBe('stalled')
+    store.recheck('krateo-system/publish-my-chart')
+    const [resumed] = store.getSnapshot()
+    expect(resumed.startedAt).toBe(initial.startedAt)
+    // …while the BUDGET clock restarts, so the fresh watch is not expired on its first tick.
+    expect(resumed.watchStartedAt).toBeGreaterThan(initial.startedAt)
+    store.reset()
+  })
+
   it('recheck and dismiss ignore an unknown key', () => {
     const { deps } = fakeDeps({})
     const store = createPublishFollowStore(deps)
@@ -217,6 +236,7 @@ describe('publishSettlementText', () => {
     target: target(),
     total: 0,
     updatedAt: 1000,
+    watchStartedAt: 0,
     ...extra,
   })
 
@@ -239,9 +259,94 @@ describe('publishSettlementText', () => {
     expect(text).not.toMatch(/publish failed/i)
   })
 
+  it('reports the REAL age, not the budget constant — twelve hours must not read as five minutes', () => {
+    const text = publishSettlementText(state('stalled', { ready: 2, startedAt: 0, total: 3, updatedAt: 12 * 3_600_000 }))
+    expect(text).toContain('12h 00m')
+    expect(text).not.toContain('5 minutes')
+  })
+
+  it('does NOT claim the publish is progressing when nothing was ever rendered', () => {
+    const text = publishSettlementText(state('stalled', { ready: 0, total: 0 }))
+    expect(text).toContain('no git resources have been rendered')
+    expect(text).toContain('may not be reconciling it')
+    expect(text).not.toMatch(/publish failed/i)
+  })
+
   it('reports an unreadable status as a MISSING verdict, with the transport reason', () => {
     const text = publishSettlementText(state('unreadable', { transportError: 'read failed (HTTP 403)' }))
     expect(text).toContain('could not read its status')
     expect(text).toContain('read failed (HTTP 403)')
+  })
+})
+
+describe('publishSettlementActions', () => {
+  const state = (phase: PublishFollowState['phase']): PublishFollowState => ({
+    key: 'krateo-system/publish-my-chart',
+    phase,
+    ready: 0,
+    startedAt: 0,
+    target: target(),
+    total: 0,
+    updatedAt: 1000,
+    watchStartedAt: 0,
+  })
+
+  it('gives the DURABLE record the link, so dismissing the card does not lose it', () => {
+    const actions = publishSettlementActions(state('pushed'))
+    expect(actions).toEqual([{ label: 'Open change request', readOnly: true, url: target().deepLink, verb: 'openChangeRequest' }])
+  })
+
+  it('offers a MISSING verdict the link with the uncertainty in its label — never a bare promise', () => {
+    for (const phase of ['stalled', 'unreadable'] as const) {
+      const actions = publishSettlementActions(state(phase))
+      expect(actions).toHaveLength(1)
+      expect(actions[0].label).toBe('Open change request (only exists if the push landed)')
+      expect(actions[0].url).toBe(target().deepLink)
+    }
+  })
+
+  it('offers NOTHING to open after a failure — nothing was pushed', () => {
+    expect(publishSettlementActions(state('failed'))).toEqual([])
+  })
+})
+
+describe('createPublishAnnouncer', () => {
+  const settled = (phase: PublishFollowState['phase']): PublishFollowState => ({
+    failure: { child: 'publish-my-chart-000', message: CLONE_FAILURE },
+    key: 'krateo-system/publish-my-chart',
+    phase,
+    ready: 0,
+    startedAt: 0,
+    target: target(),
+    total: 0,
+    updatedAt: 1000,
+    watchStartedAt: 0,
+  })
+
+  it('appends the verdict — with the child\'s own message — to the thread that published', () => {
+    autopilotConversationStore.reset()
+    const announce = createPublishAnnouncer()
+    announce(settled('failed'))
+    const { messages } = autopilotConversationStore.getSnapshot()
+    expect(messages).toHaveLength(1)
+    expect(messages[0].text).toContain(CLONE_FAILURE)
+    autopilotConversationStore.reset()
+  })
+
+  it('carries the link into the transcript on a push', () => {
+    autopilotConversationStore.reset()
+    createPublishAnnouncer()(settled('pushed'))
+    expect(autopilotConversationStore.getSnapshot().messages[0].actions?.[0].url).toBe(target().deepLink)
+    autopilotConversationStore.reset()
+  })
+
+  it('DOES NOT file the verdict under a thread the user switched to mid-publish', () => {
+    autopilotConversationStore.reset()
+    const announce = createPublishAnnouncer()
+    // The user starts a new thread while the follow is still running.
+    autopilotConversationStore.reset()
+    announce(settled('failed'))
+    expect(autopilotConversationStore.getSnapshot().messages).toEqual([])
+    autopilotConversationStore.reset()
   })
 })

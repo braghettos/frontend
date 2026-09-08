@@ -16,6 +16,9 @@
  *   stalled     amber, honest: still running, nothing failed, here is Check again. Never "failed".
  *   unreadable  amber: we could not read the status, and we say so instead of guessing either way.
  *
+ * The two amber states carry the link too — labelled with their own uncertainty — because a MISSING
+ * verdict must not cost a publish that actually landed its only route to the change request.
+ *
  * Lives outside AutopilotRail.tsx for the reason VoiceControl.tsx does — the rail's 500-line budget.
  * Raw elements + the rail's CSS module + the inline stroke SVGs from icons.tsx; antd `Tooltip` for
  * the two controls that need explaining.
@@ -26,9 +29,13 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 
 import styles from './AutopilotRail.module.css'
 import type { PublishFollowState } from './builderPublishFollow'
-import type { PublishFollowPhase } from './builderPublishStatus'
+import { formatElapsed, type PublishFollowPhase } from './builderPublishStatus'
 import { autopilotPublishStore } from './builderPublishStore'
 import { AlertIcon, CheckIcon, ClockIcon, SpinnerIcon } from './icons'
+
+// The duration formatter lives in the pure module (builderPublishStatus.ts) because the transcript
+// sentence needs it too; re-exported here so the card and its test read it from one place.
+export { formatElapsed }
 
 /** Per-phase accent. `pushed` deliberately borrows nothing loud: the house rule forbids a status
  *  marker for the healthy state, so success is quiet chrome carrying a link, not a green banner. */
@@ -47,19 +54,6 @@ const PHASE_TITLE: Record<PublishFollowPhase, string> = {
   pushed: 'Pushed',
   stalled: 'Still running',
   unreadable: 'Status unavailable',
-}
-
-/** "8s" · "2m 14s" · "1h 03m" — coarse on purpose; this is a duration, not a stopwatch. */
-export const formatElapsed = (ms: number): string => {
-  const seconds = Math.max(0, Math.floor(ms / 1000))
-  if (seconds < 60) {
-    return `${seconds}s`
-  }
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) {
-    return `${minutes}m ${String(seconds % 60).padStart(2, '0')}s`
-  }
-  return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`
 }
 
 /**
@@ -85,14 +79,22 @@ const progressLabel = (state: PublishFollowState): string => {
 
 const PENDING_HINT = 'Watching the git-provider resources this publish rendered. The change-request link appears once the push has actually landed — never before.'
 const RECHECK_HINT = 'Watch this publish for another five minutes. It keeps running on the cluster either way; this only resumes the portal looking at it.'
+const AGE_HINT = 'How long ago this publish was submitted — not how long the portal has been watching it. Check again resumes the watch; it does not restart the clock.'
+const HEDGED_LINK_HINT = 'We could not confirm the push landed, so this change request may not exist yet — the page 404s if the branch was never pushed. It is offered because a publish that DID land should not cost you the link.'
+
+/** The elapsed clock is shown while a publish is in flight and on the two states that mean "we do
+ *  not know yet" — those are exactly the cards where the age is the deciding fact. */
+const SHOWS_AGE: PublishFollowPhase[] = ['pending', 'stalled', 'unreadable']
 
 const PublishCard = ({ state }: { state: PublishFollowState }) => {
   const { branch, destination } = state.target
   const settled = state.phase !== 'pending'
-  // The clock reads from the WALL, not from `updatedAt`: the state only changes on a sweep (2–10s
-  // apart), and an elapsed time that jumps in poll-sized steps is exactly the "is this thing even
-  // alive?" ambiguity the card is here to remove.
-  const elapsed = formatElapsed(Date.now() - state.startedAt)
+  // While the publish is live the clock reads from the WALL, not from `updatedAt`: the state only
+  // changes on a sweep (2–10s apart), and an elapsed time that jumps in poll-sized steps is exactly
+  // the "is this thing even alive?" ambiguity the card is here to remove. On a settled card it
+  // freezes at the last sweep. Either way it measures from the PUBLISH's start, not this watch's,
+  // so a re-checked publish keeps reading its true age.
+  const elapsed = formatElapsed((settled ? state.updatedAt : Date.now()) - state.startedAt)
 
   return (
     <div className={`${styles.apPub} ${PHASE_CLASS[state.phase]}`} data-phase={state.phase} data-testid='autopilot-publish-card'>
@@ -104,8 +106,8 @@ const PublishCard = ({ state }: { state: PublishFollowState }) => {
         <span className={styles.apPubTitle}>{PHASE_TITLE[state.phase]}</span>
         <span className={styles.apPubDest}>{destination}</span>
         <span className={styles.apSpacer} />
-        {state.phase === 'pending' ? (
-          <Tooltip title={PENDING_HINT}>
+        {SHOWS_AGE.includes(state.phase) ? (
+          <Tooltip title={state.phase === 'pending' ? PENDING_HINT : AGE_HINT}>
             <span className={styles.apPubElapsed}>{elapsed}</span>
           </Tooltip>
         ) : null}
@@ -136,9 +138,15 @@ const PublishCard = ({ state }: { state: PublishFollowState }) => {
         </>
       ) : null}
 
+      {/* TWO stalls, deliberately worded apart. "3 of 6 committed" is progress we watched happen;
+          "nothing rendered at all" is NOT — asserting the publish keeps going there would claim
+          something we never saw, and the likelier truth is that the composition is not reconciling
+          the claim. Neither sentence is allowed to read as a failure. */}
       {state.phase === 'stalled' ? (
         <div className={styles.apPubNote}>
-          {progressLabel(state)} and nothing has failed. The publish keeps going on the cluster — the portal stopped watching after five minutes.
+          {state.total === 0
+            ? 'No git resources have been rendered for this claim yet — the builder-publish composition may not be reconciling it. Nothing has failed, and nothing has been pushed.'
+            : `${progressLabel(state)} and nothing has failed. The publish keeps going on the cluster — the portal stopped watching.`}
         </div>
       ) : null}
 
@@ -149,10 +157,20 @@ const PublishCard = ({ state }: { state: PublishFollowState }) => {
       ) : null}
 
       <div className={styles.apPubActions}>
-        {/* THE LINK, AND ONLY HERE. Every other phase withholds it, because outside `pushed` the
-            change request it points at does not exist yet — which is the original bug verbatim. */}
+        {/* THE PLAIN LINK, AND ONLY HERE: `pushed` is the one state where the change request is
+            known to be openable. `pending` and `failed` get nothing at all — in flight it does not
+            exist yet, and after a failure it never will, which is the original bug verbatim. */}
         {state.phase === 'pushed' ? (
           <a className={styles.apPubLink} href={state.target.deepLink} rel='noreferrer' target='_blank'>Open change request</a>
+        ) : null}
+        {/* A MISSING verdict is not a failure, and it must not silently cost a working publish its
+            link — on an install where the caller cannot read `localresources`, `unreadable` is the
+            only verdict this card will ever reach. So the link is offered with the uncertainty in
+            its own label, which is the opposite of presenting it as a change request that exists. */}
+        {state.phase === 'stalled' || state.phase === 'unreadable' ? (
+          <Tooltip title={HEDGED_LINK_HINT}>
+            <a className={styles.apPubLinkHedged} href={state.target.deepLink} rel='noreferrer' target='_blank'>Open change request (only exists if the push landed)</a>
+          </Tooltip>
         ) : null}
         {settled && state.phase !== 'pushed' ? (
           <Tooltip title={RECHECK_HINT}>
@@ -172,12 +190,13 @@ const PublishCard = ({ state }: { state: PublishFollowState }) => {
 const PublishFollowPanel = () => {
   const follows = useSyncExternalStore(autopilotPublishStore.subscribe, autopilotPublishStore.getSnapshot)
   useSecondsTick(follows.some((state) => state.phase === 'pending'))
-  if (follows.length === 0) {
-    return null
-  }
 
+  // The live region is mounted UNCONDITIONALLY (and collapsed by `:empty` in CSS). A screen reader
+  // announces changes INSIDE an existing live region; one that appears already holding its first
+  // card is typically not read out — and the entire failure mode being fixed is a state change
+  // nobody was told about, so the first card is the one that must be announced.
   return (
-    <div aria-live='polite' className={styles.apPubPanel} data-testid='autopilot-publish-panel'>
+    <div aria-live='polite' className={styles.apPubPanel} data-testid='autopilot-publish-panel' role='status'>
       {follows.map((state) => <PublishCard key={state.key} state={state} />)}
     </div>
   )

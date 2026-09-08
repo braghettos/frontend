@@ -93,6 +93,12 @@ export interface AutopilotActionChip {
   /** Optional external link — renders the label as an anchor (e.g. the "Open change request"
    *  deep link after an SCM-agnostic publish, which the human opens in their own SCM). */
   url?: string
+  /**
+   * MUTATING chips only: whether the write was ACCEPTED by the apiserver. Absent on read-only
+   * chips and on every non-write verb. A dispatched write that came back 403/409/422/500 is
+   * `false` — callers must not read "a chip exists" as "the object was created".
+   */
+  ok?: boolean
 }
 
 // ────────────────────────────────────────────────────────────────────────────

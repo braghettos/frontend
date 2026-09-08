@@ -49,18 +49,29 @@ export const FOLLOW_BUDGET_MS = 5 * 60 * 1000
 
 /**
  * Poll spacing, backing off 2s → 10s. Tight at the start (most publishes settle inside the first
- * three sweeps, and a fast success should feel instant), relaxed afterwards so a stuck publish
- * costs snowplow well under one request per second for the rest of its budget.
+ * three sweeps, and a fast success should feel instant), relaxed afterwards: a stuck publish then
+ * costs snowplow one SWEEP every ten seconds for the rest of its budget. A sweep is a parallel fan
+ * of one GET per probed name — at most `MAX_APPLY_SET_OPS` files + MAX_CHILD_PROBE_SLACK, so ≤18
+ * reads per ten seconds, and the claim-publish path denies anything larger before it is POSTed.
  */
 export const POLL_BACKOFF_MS = [2000, 3000, 5000, 8000]
 const STEADY_POLL_MS = 10000
 
 /**
- * How far PAST the claim's file count to probe each sweep. The composition renders at least one
- * LocalResource per held file; the slack catches a chart that renders an extra object (a branch
+ * How far PAST the claim's file count to probe on the FIRST sweep. The composition renders at least
+ * one LocalResource per held file; the slack catches a chart that renders an extra object (a branch
  * ref, a marker) without which the child set would look complete one object early.
  */
 export const CHILD_PROBE_SLACK = 2
+
+/**
+ * The widest the window may grow. A sweep in which EVERY probed name existed proves nothing about
+ * where the series ends, so the next sweep looks further (see `truncated`) rather than concluding
+ * success from a saturated window — that would hand back "Pushed" while an unprobed `-004` sat on
+ * the clone error, which is the original defect with a tick next to it. Growth stops here; a window
+ * still saturated at the cap simply never reaches `pushed` and lands on the honest `stalled`.
+ */
+export const MAX_CHILD_PROBE_SLACK = 8
 
 /** Where a publish is going and what to watch — everything the follower needs, nothing more. */
 export interface PublishFollowTarget {
@@ -81,7 +92,16 @@ export interface PublishFollowTarget {
 export interface PublishFollowState extends PublishVerdict {
   key: string
   target: PublishFollowTarget
+  /**
+   * When THE PUBLISH started — not when the current watch did. `Check again` spends a fresh budget
+   * but carries this forward, because it is the only number that separates "ninety seconds pending"
+   * from "stuck since last night", and resetting it on the very affordance a stuck publish pushes
+   * the user towards would erase the distinction exactly where it matters.
+   */
   startedAt: number
+  /** When the CURRENT watch began — the budget is measured from here, so a re-check gets its
+   *  full five minutes without the age above expiring it on the first tick. */
+  watchStartedAt: number
   updatedAt: number
   /** The last non-404 read failure, kept so `unreadable` can say WHY rather than just shrug. */
   transportError?: string
@@ -155,28 +175,52 @@ const readChild = async (name: string, target: PublishFollowTarget, deps: Follow
   }
 }
 
+/** The probe window a fresh follow opens with. */
+export const initialProbeWindow = (expectedChildren: number): number => Math.max(1, expectedChildren) + CHILD_PROBE_SLACK
+
+/** The widest window this claim's series may be probed at. */
+export const maxProbeWindow = (expectedChildren: number): number => Math.max(1, expectedChildren) + MAX_CHILD_PROBE_SLACK
+
 /**
- * One sweep: probe `expectedChildren + CHILD_PROBE_SLACK` names in parallel and keep the contiguous
- * prefix that exists. A non-404 read failure ENDS the prefix and is recorded — we do not pretend a
- * child we could not read is absent, and we never turn "could not read" into "failed".
+ * One sweep: probe `probeWindow` names in parallel and keep the contiguous prefix that exists. A 404 or a
+ * non-404 read failure ENDS the prefix — we do not pretend a child we could not read is absent, and
+ * we never turn "could not read" into "failed".
+ *
+ * BUT THE SCAN DOES NOT STOP THERE. Every read has already been fetched, so the whole window is
+ * checked for a child reporting a failure: a transient 502 on `-000` must not hide the
+ * `-001` that is already carrying `failed to clone repository: …`. Ordering decides what COUNTS
+ * (the prefix), never what is SHOWN (the failure).
  */
-export const sweepPublishChildren = async (target: PublishFollowTarget, deps: FollowDeps): Promise<ChildSweep> => {
-  const probes = Math.max(1, target.expectedChildren) + CHILD_PROBE_SLACK
+export const sweepPublishChildren = async (target: PublishFollowTarget, deps: FollowDeps, probeWindow?: number): Promise<ChildSweep> => {
+  const probes = probeWindow ?? initialProbeWindow(target.expectedChildren)
   const names = Array.from({ length: probes }, (_unused, index) => childResourceName(target.claimName, index))
   const reads = await Promise.all(names.map((name) => readChild(name, target, deps)))
   const children: ChildSyncState[] = []
   let transportError: string | undefined
+  let brokenChild: ChildSyncState | undefined
+  let prefixEnded = false
   for (const read of reads) {
     if ('error' in read) {
-      transportError = read.error
-      break
+      transportError ??= read.error
+      prefixEnded = true
+      continue
     }
     if (!read.found) {
-      break
+      prefixEnded = true
+      continue
     }
-    children.push(readChildSync(read.name, read.object))
+    const child = readChildSync(read.name, read.object)
+    brokenChild ??= child.failed ? child : undefined
+    if (!prefixEnded) {
+      children.push(child)
+    }
   }
-  return { children, ...(transportError ? { transportError } : {}) }
+  return {
+    children,
+    ...(brokenChild ? { brokenChild } : {}),
+    ...(children.length === probes ? { truncated: true } : {}),
+    ...(transportError ? { transportError } : {}),
+  }
 }
 
 /**
@@ -192,32 +236,43 @@ export const followPublish = (
   onState: (state: PublishFollowState) => void,
   deps: FollowDeps,
   budgetMs: number = FOLLOW_BUDGET_MS,
+  /** The publish's ORIGINAL start, carried across a `Check again` (default: this watch's start). */
+  startedAt?: number,
 ): { cancel: () => void } => {
   const key = followKey(target.namespace, target.claimName)
-  const startedAt = deps.now()
+  const watchStartedAt = deps.now()
+  const publishStartedAt = startedAt ?? watchStartedAt
   let cancelled = false
   let cancelTimer: (() => void) | null = null
   let sweeps = 0
   let lastCount = -1
   let stableSweeps = 0
+  let probeWindow = initialProbeWindow(target.expectedChildren)
 
   const emit = (verdict: PublishVerdict, transportError: string | undefined): void => {
-    onState({ ...verdict, key, startedAt, target, updatedAt: deps.now(), ...(transportError ? { transportError } : {}) })
+    onState({ ...verdict, key, startedAt: publishStartedAt, target, updatedAt: deps.now(), watchStartedAt, ...(transportError ? { transportError } : {}) })
   }
 
   const tick = async (): Promise<void> => {
     if (cancelled) {
       return
     }
-    const sweep = await sweepPublishChildren(target, deps)
+    const sweep = await sweepPublishChildren(target, deps, probeWindow)
     if (cancelled) {
       return
+    }
+    // A saturated window says nothing about where the series ends — look further next time, up to
+    // the cap, rather than reading "every name I asked about exists" as "that is all of them".
+    if (sweep.truncated) {
+      probeWindow = Math.min(probeWindow + CHILD_PROBE_SLACK, maxProbeWindow(target.expectedChildren))
     }
     // Child-count stability (see STABLE_SWEEPS_REQUIRED): a mid-render sweep that happens to see
     // "3 of 6, all Synced" must not be reported as a completed push.
     stableSweeps = sweep.children.length === lastCount ? stableSweeps + 1 : 1
     lastCount = sweep.children.length
-    const elapsedMs = deps.now() - startedAt
+    // The BUDGET runs from this watch, not from the publish's age: a re-check buys another full
+    // five minutes of looking, and would otherwise expire on its own first tick.
+    const elapsedMs = deps.now() - watchStartedAt
     const verdict = reducePublishVerdict({ budgetMs, elapsedMs, expectedMin: target.expectedChildren, stableSweeps, sweep })
     emit(verdict, sweep.transportError)
     if (isTerminalPhase(verdict.phase)) {

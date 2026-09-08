@@ -202,6 +202,15 @@ export interface ApplyResourceSetChip {
   verb: 'applyResourceSet'
   label: string
   readOnly: false
+  /**
+   * Whether the apiserver ACCEPTED the writes. A non-null chip means the human confirmed and the
+   * ops were dispatched — NOT that they landed: `runRestSet` reports a 403/409/422/500 as a
+   * `{ok:false}` result and still returns the array. Callers that do something on the strength of
+   * a write having happened (the publish follow, a change-request link) must read this, not merely
+   * the chip's existence; treating "dispatched" as "created" is how a rejected claim came to be
+   * reported as a publish in flight.
+   */
+  ok: boolean
 }
 
 /**
@@ -210,6 +219,9 @@ export interface ApplyResourceSetChip {
  * human declines the ONE aggregated W0-4 confirm (handleActionSet returns null — nothing
  * dispatched). Dispatch is via `deps.handleActionSet` → `runRestSet`, so the whole set
  * ALWAYS flows through the blast-radius gate and NEVER bypasses ctx.confirm.
+ *
+ * A REJECTED write is a chip with `ok:false` whose label says what the server said — not a
+ * silent success. runRestSet's own toast is transient; the chip is what the transcript keeps.
  */
 export const applyResourceSet = async (
   proposal: ApplyResourceSetProposal,
@@ -235,6 +247,10 @@ export const applyResourceSet = async (
   }
 
   const label = proposal.label ?? `apply ${ops.length} object${ops.length === 1 ? '' : 's'}`
+  // Stop-on-first-error: the failed op is the last entry runRestSet returned.
+  const failed = results.find((result) => !result.ok)
 
-  return { label, readOnly: false, verb: 'applyResourceSet' }
+  return failed
+    ? { label: `${label} — not applied: ${failed.message}`, ok: false, readOnly: false, verb: 'applyResourceSet' }
+    : { label, ok: true, readOnly: false, verb: 'applyResourceSet' }
 }

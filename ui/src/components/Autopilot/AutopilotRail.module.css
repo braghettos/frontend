@@ -1117,6 +1117,12 @@
   margin-bottom: 10px;
 }
 
+/* The live region is always mounted so a screen reader is subscribed before the first card lands;
+   with no cards it must occupy nothing at all. */
+.apPubPanel:empty {
+  display: none;
+}
+
 .apPub {
   background: var(--background-color);
   border: 1px solid var(--border-color);
@@ -1252,6 +1258,19 @@
 
 .apPubLink:hover {
   text-decoration: underline;
+}
+
+/* The hedged link on the two "we do not know" states. Deliberately quieter than the earned one:
+   it is an offer, not a confirmation, and it must not read as the same promise. */
+.apPubLinkHedged {
+  color: var(--gray-color);
+  font-size: 11px;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+.apPubLinkHedged:hover {
+  color: var(--primary-color);
 }
 
 .apPubBtn {

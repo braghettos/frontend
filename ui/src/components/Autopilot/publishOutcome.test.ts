@@ -14,7 +14,7 @@ import type { AutopilotActionChip } from './types'
 // The follow itself is exercised in builderPublishFollow/Store tests; here we only assert WHICH
 // gate reaches it, so the store's real (cluster-touching) starter is replaced.
 vi.mock('./builderPublishStore', () => ({
-  announcePublishSettlement: vi.fn(),
+  createPublishAnnouncer: vi.fn(() => vi.fn()),
   startPublishFollow: vi.fn(() => true),
 }))
 
@@ -31,7 +31,10 @@ const CONFIG = { api: { SNOWPLOW_API_BASE_URL: 'http://snowplow' } } as Config
 
 const OPS = [{ gvr: { group: 'composition.krateo.io', resource: 'builderpublishes', version: 'v1-7-17' }, namespace: 'krateo-system', verb: 'POST' as const }]
 
-const dispatched: AutopilotActionChip = { label: 'apply 1 object', readOnly: false, verb: 'applyResourceSet' }
+/** What `apply` returns when the human confirmed AND the apiserver accepted the claim. */
+const dispatched: AutopilotActionChip = { label: 'apply 1 object', ok: true, readOnly: false, verb: 'applyResourceSet' }
+/** …and when it confirmed but the apiserver REFUSED it (403 / 409 AlreadyExists / 5xx). */
+const rejected: AutopilotActionChip = { label: 'apply 1 object — not applied: builderpublishes.composition.krateo.io "publish-my-chart" already exists', ok: false, readOnly: false, verb: 'applyResourceSet' }
 
 const mockedStart = vi.mocked(startPublishFollow)
 
@@ -66,6 +69,26 @@ describe('pushPublishOutcome', () => {
     expect(chips[1].label).toBe('publishing to krateo-blueprints/blueprints · builder/my-chart')
     expect(chips.some((chip) => chip.url)).toBe(false)
     expect(chips.some((chip) => chip.label === 'Open change request')).toBe(false)
+  })
+
+  it('A REJECTED CLAIM (403 / 409 / 5xx) starts NO follow and offers NO link — nothing was created', async () => {
+    mockedStart.mockClear()
+    const chips: AutopilotActionChip[] = []
+    const apply = vi.fn().mockResolvedValue(rejected)
+    await pushPublishOutcome({ apply, chips, compiled: { denial: null, ops: OPS }, config: CONFIG, deepLink: SEED.deepLink, follow: SEED, label: 'publish', origin: { actor: 'agent' } })
+    // The server's own words are kept (the chip), and nothing is added on top that contradicts them:
+    // no "publishing…", no watch that would later report a non-existent publish as still running.
+    expect(chips).toEqual([rejected])
+    expect(mockedStart).not.toHaveBeenCalled()
+    expect(chips.some((chip) => chip.url)).toBe(false)
+  })
+
+  it('a rejected claim on the LEGACY path is not handed the immediate link either', async () => {
+    mockedStart.mockClear()
+    const chips: AutopilotActionChip[] = []
+    const apply = vi.fn().mockResolvedValue(rejected)
+    await pushPublishOutcome({ apply, chips, compiled: { denial: null, ops: OPS }, config: CONFIG, deepLink: 'https://github.com/o/r/compare/main...b', follow: null, label: 'publish', origin: { actor: 'agent' } })
+    expect(chips).toEqual([rejected])
   })
 
   it('falls back to the immediate link ONLY when there is nothing to follow (legacy github path)', async () => {

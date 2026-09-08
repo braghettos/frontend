@@ -3,11 +3,18 @@
  * is at its 500-line cap) so the honesty rules live somewhere they can be read and tested.
  *
  * THE RULE THIS FILE ENFORCES: the "Open change request" link is a claim about the world, and it may
- * only be made once the world agrees. Three gates, in order:
+ * only be made once the world agrees. Four gates, in order:
  *   1. a denial never dispatches and never links;
  *   2. a DECLINED blast-radius confirm wrote nothing, so it never links either (the old code linked
  *      here regardless — a smaller version of the same lie);
- *   3. a dispatched claim starts a FOLLOW and the link is withheld from the transcript entirely; the
+ *   3. a REJECTED write (403 on `builderpublishes`, 409 AlreadyExists on a re-publish, a webhook
+ *      refusal, a snowplow 5xx) created no claim, so there is nothing to watch and nothing to open.
+ *      A dispatched set is not an accepted one: `runRestSet` returns its results array either way,
+ *      so "the chip is non-null" says only that the human confirmed. Watching a claim the apiserver
+ *      refused would spin for five minutes and then tell the user, in the transcript, that a
+ *      publish that never existed is "still running on the cluster" — a fresh false reassurance on
+ *      top of a real error, which is the same defect this file exists to close;
+ *   4. an ACCEPTED claim starts a FOLLOW and the link is withheld from the transcript entirely; the
  *      rail's publish card offers it only when the git-provider children report the push landed.
  * The legacy github path (and any install with no snowplow base URL to watch through) keeps the old
  * immediate link, because there is nothing there to follow — an unwatched publish is a known,
@@ -18,7 +25,7 @@ import type { Config } from '../../context/ConfigContext'
 import type { WriteOrigin } from '../../hooks/provenance'
 
 import type { PortalActionProposal } from './actionBridge'
-import { announcePublishSettlement, startPublishFollow, type PublishFollowSeed } from './builderPublishStore'
+import { createPublishAnnouncer, startPublishFollow, type PublishFollowSeed } from './builderPublishStore'
 import type { PublishCompileResult } from './publishCompile'
 import type { AutopilotActionChip } from './types'
 
@@ -52,9 +59,14 @@ export const pushPublishOutcome = async (args: PublishOutcomeArgs): Promise<void
   if (!applied) {
     return
   }
-  // Gate 3: the claim exists; the push does NOT yet. Start watching its git-provider children and
+  // Gate 3: dispatched but REFUSED ⇒ no claim was created. The chip already carries the server's
+  // own message; adding a follow or a link on top of it would contradict it.
+  if (applied.ok === false) {
+    return
+  }
+  // Gate 4: the claim exists; the push does NOT yet. Start watching its git-provider children and
   // say only what is true — "publishing". The link moves to the rail's card, which earns it later.
-  if (follow && startPublishFollow(follow, config, announcePublishSettlement)) {
+  if (follow && startPublishFollow(follow, config, createPublishAnnouncer())) {
     chips.push({ label: `publishing to ${follow.destination} · ${follow.branch}`, readOnly: true, verb: 'publishBranch' })
     return
   }

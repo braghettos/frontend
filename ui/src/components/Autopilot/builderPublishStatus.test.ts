@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   childResourceName,
+  formatElapsed,
   isTerminalPhase,
   readChildSync,
   reducePublishVerdict,
@@ -22,6 +23,16 @@ const child = (status: string, message?: string, type = 'Synced') => ({
 })
 
 const ready = (name: string): ChildSyncState => ({ failed: false, name, ready: true })
+
+/** A resource carrying BOTH verdict conditions — the shape that broke the first-condition-wins read. */
+const pair = (synced: string, readyStatus: string, message?: string) => ({
+  status: {
+    conditions: [
+      { message, reason: 'ReconcileError', status: synced, type: 'Synced' },
+      { status: readyStatus, type: 'Ready' },
+    ],
+  },
+})
 
 describe('childResourceName', () => {
   it('reproduces the composition naming: <claim>-000 … -00N', () => {
@@ -52,6 +63,21 @@ describe('readChildSync', () => {
   it('falls back to Ready when the resource carries no Synced condition', () => {
     expect(readChildSync('publish-x-000', child('True', undefined, 'Ready')).ready).toBe(true)
     expect(readChildSync('publish-x-000', child('False', 'boom', 'Ready')).failed).toBe(true)
+  })
+
+  it('WHEN THE CONDITIONS DISAGREE it refuses to pick the cheerful one: Synced True + Ready False is not ready', () => {
+    const state = readChildSync('publish-x-000', pair('True', 'False'))
+    expect(state.ready).toBe(false)
+    // …and it is NOT reported as a failure either — a secondary `Ready: False` is routinely just
+    // "not available yet", and fabricating a failure from it is the same lie in reverse.
+    expect(state.failed).toBe(false)
+  })
+
+  it('takes the FAILURE (and the message) from the authoritative condition, whatever Ready says', () => {
+    const state = readChildSync('publish-x-000', pair('False', 'True', CLONE_FAILURE))
+    expect(state.failed).toBe(true)
+    expect(state.message).toBe(CLONE_FAILURE)
+    expect(state.ready).toBe(false)
   })
 })
 
@@ -118,6 +144,32 @@ describe('reducePublishVerdict', () => {
   it('a failure still wins over an expired budget', () => {
     const children = [readChildSync('a-000', child('False', CLONE_FAILURE))]
     expect(reducePublishVerdict({ ...base, elapsedMs: 999999, expectedMin: 1, sweep: { children } }).phase).toBe('failed')
+  })
+
+  it('surfaces a failing child found PAST the readable prefix — a read blip must not bury evidence we hold', () => {
+    const broken = readChildSync('a-001', child('False', CLONE_FAILURE))
+    const verdict = reducePublishVerdict({ ...base, expectedMin: 6, sweep: { brokenChild: broken, children: [], transportError: 'read failed (HTTP 502)' } })
+    expect(verdict.phase).toBe('failed')
+    expect(verdict.failure?.message).toBe(CLONE_FAILURE)
+  })
+
+  it('will NOT call it pushed while a name in the window could not be read', () => {
+    const all = Array.from({ length: 6 }, (_unused, index) => ready(`a-00${index}`))
+    expect(reducePublishVerdict({ ...base, sweep: { children: all, transportError: 'read failed (HTTP 500)' } }).phase).toBe('pending')
+  })
+
+  it('will NOT call it pushed from a SATURATED probe window — the series may run past what we looked at', () => {
+    const all = Array.from({ length: 6 }, (_unused, index) => ready(`a-00${index}`))
+    expect(reducePublishVerdict({ ...base, sweep: { children: all, truncated: true } }).phase).toBe('pending')
+  })
+})
+
+describe('formatElapsed', () => {
+  it('distinguishes ninety seconds from twelve hours', () => {
+    expect(formatElapsed(8_000)).toBe('8s')
+    expect(formatElapsed(90_000)).toBe('1m 30s')
+    expect(formatElapsed(12 * 3_600_000)).toBe('12h 00m')
+    expect(formatElapsed(-5)).toBe('0s')
   })
 })
 
