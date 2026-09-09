@@ -198,7 +198,16 @@ config:
   #   default SCM-agnostic path discriminates Portal-Builder listings by the krateo.io/builder LABEL,
   #   not the repo, so per-artifact repos are safe. (KOG repo kept as krateo-oas for the legacy github
   #   -PR path, where the portal deliverables RA still matches spec.repo == "krateo-oas".)
-  AUTOPILOT_BLUEPRINT_BUILDER_REPO: krateo-blueprints/blueprints
+  # EMPTY ON PURPOSE. This shipped as `krateo-blueprints/blueprints`, which does not exist — the org
+  # has 35 repositories and none by that name. The page and KOG defaults above/below are real; this
+  # one was the outlier, so every install that did not override it had blueprint publishing that
+  # could never complete. A default pointing nowhere is worse than none: `builderClaimPublish.ts`
+  # already DENIES an empty destination with an actionable message naming this key, but a non-empty
+  # one sails past that guard, renders a LocalResource per file, and fails as `authentication
+  # required: invalid credentials` — git reports an absent-or-invisible repo as an auth error, so it
+  # does not even read as a wrong address. Set it to a real owner/repo that already EXISTS: a
+  # publish pushes a branch to an existing repository, it never creates one.
+  AUTOPILOT_BLUEPRINT_BUILDER_REPO: ""
   AUTOPILOT_KOG_BUILDER_REPO: krateo-platformops/krateo-oas
   # SCM-agnostic publishing — ON by default. The builders publish via a BuilderPublish claim
   # (git-provider LocalResources) instead of the github.krateo.io GitRef/RepoContent/PullRequest set:
