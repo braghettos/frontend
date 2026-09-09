@@ -27,6 +27,7 @@ import styles from './AutopilotRail.module.css'
 import AutopilotTour from './AutopilotTour'
 import { autopilotComposerDraftStore } from './composerDraftStore'
 import { describeArgs, deriveSessionsBase, fetchDelegationEvidence, serializeEvidence, summarizeEvidence } from './evidence'
+import { useRailFocusTrap } from './focusTrap'
 import { CheckIcon, CollapseIcon, CopyIcon, EvidenceIcon, ExpandIcon, EyeIcon, HistoryIcon, LinkIcon, PlusIcon, SendIcon, ShrinkIcon, SparkIcon, StopIcon } from './icons'
 import { looksLikeOpenApiDocument } from './oasAttachment'
 import { relativeTime, type ThreadSummary } from './sessionHistoryStore'
@@ -252,6 +253,13 @@ const STARTER_PROMPTS = [
  * Re-reads the archive when it opens, and again whenever the active thread changes (a switch or
  * a new thread both change `currentSessionId`) — keeping the list in sync without a live
  * localStorage subscription. `aria-hidden` while closed, matching its zero width.
+ *
+ * The search box is a local, in-memory filter over `rows` (title substring match) — not
+ * PageSearch's `?q=`-bound pattern, since this list isn't URL-addressable state — and the
+ * query resets on close so reopening the column never lands on a stale filter. Every
+ * tabbable element here also gets `tabIndex={-1}` while closed: the column keeps rendering
+ * at width:0 rather than unmounting (see the rail's own convention), and without it Tab would
+ * still walk through search + rows that are invisible and `aria-hidden`.
  */
 const HistoryColumn = ({ currentSessionId, onSwitch, open, sessions }: {
   currentSessionId: string
@@ -260,33 +268,60 @@ const HistoryColumn = ({ currentSessionId, onSwitch, open, sessions }: {
   sessions: () => ThreadSummary[]
 }) => {
   const [rows, setRows] = useState<ThreadSummary[]>([])
+  const [query, setQuery] = useState('')
 
   useEffect(() => {
     if (open) {
       setRows(sessions())
+    } else {
+      setQuery('')
     }
   }, [sessions, currentSessionId, open])
+
+  const trimmedQuery = query.trim()
+  const filteredRows = trimmedQuery
+    ? rows.filter((row) => row.title.toLowerCase().includes(trimmedQuery.toLowerCase()))
+    : rows
+
+  let listContent: React.ReactNode
+  if (rows.length === 0) {
+    listContent = <div className={styles.apHistoryEmpty}>No past conversations yet. Your threads are saved here when you start a new one.</div>
+  } else if (filteredRows.length === 0) {
+    listContent = <div className={styles.apHistoryEmpty}>No conversations match &quot;{trimmedQuery}&quot;.</div>
+  } else {
+    listContent = filteredRows.map((row) => (
+      <button
+        className={`${styles.apHistoryRow} ${row.sessionId === currentSessionId ? styles.apHistoryRowActive : ''}`}
+        key={row.sessionId}
+        onClick={() => onSwitch(row.sessionId)}
+        tabIndex={open ? 0 : -1}
+        type='button'
+      >
+        <span className={styles.apHistoryTitle}>{row.title}</span>
+        <span className={styles.apHistoryMeta}>{relativeTime(row.updatedAt)} · {row.messageCount} msg{row.messageCount === 1 ? '' : 's'}</span>
+      </button>
+    ))
+  }
 
   return (
     <div aria-hidden={!open} className={`${styles.apHistoryCol} ${open ? styles.apHistoryColOpen : ''}`} data-testid='autopilot-history-panel'>
       <div className={styles.apHistoryHead}>Conversations</div>
-      <div className={styles.apHistoryList}>
-        {rows.length === 0 ? (
-          <div className={styles.apHistoryEmpty}>No past conversations yet. Your threads are saved here when you start a new one.</div>
-        ) : (
-          rows.map((row) => (
-            <button
-              className={`${styles.apHistoryRow} ${row.sessionId === currentSessionId ? styles.apHistoryRowActive : ''}`}
-              key={row.sessionId}
-              onClick={() => onSwitch(row.sessionId)}
-              type='button'
-            >
-              <span className={styles.apHistoryTitle}>{row.title}</span>
-              <span className={styles.apHistoryMeta}>{relativeTime(row.updatedAt)} · {row.messageCount} msg{row.messageCount === 1 ? '' : 's'}</span>
-            </button>
-          ))
-        )}
-      </div>
+      {rows.length > 0 ? (
+        <div className={styles.apHistorySearchWrap}>
+          <EvidenceIcon className={styles.apHistorySearchIcon} size={11} />
+          <input
+            aria-label='Search conversations'
+            className={styles.apHistorySearchInput}
+            data-testid='autopilot-history-search'
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder='Search…'
+            tabIndex={open ? 0 : -1}
+            type='text'
+            value={query}
+          />
+        </div>
+      ) : null}
+      <div className={styles.apHistoryList}>{listContent}</div>
     </div>
   )
 }
@@ -304,6 +339,17 @@ const RAIL_DEFAULT_WIDTH = 384
 const HISTORY_EXTRA_WIDTH = 256
 
 const clampRailWidth = (value: number) => Math.min(RAIL_MAX_WIDTH, Math.max(RAIL_MIN_WIDTH, value))
+
+// Responsive guard: on a narrow viewport, a persisted-wide `railWidth` (dragged on a bigger
+// screen) or the history split's fixed +256 must not crush `main` to nothing. Mirrors the
+// max-width backstop in AutopilotRail.module.css (which wins regardless, even before this
+// runs) but also keeps the drag itself from fighting that CSS clamp mid-gesture — without it,
+// the handle would visually detach from the cursor once the box hit its CSS max-width while
+// `railWidth` kept climbing underneath. ABSOLUTE_MIN_DOCK is the floor even on a tiny viewport,
+// matching the CSS backstop's own floor (never squeeze the rail into something unusable).
+const ABSOLUTE_MIN_DOCK = 240
+const NARROW_VIEWPORT = 640
+const maxDockableWidth = (viewportWidth: number) => Math.max(ABSOLUTE_MIN_DOCK, viewportWidth - (viewportWidth <= NARROW_VIEWPORT ? 64 : 200))
 
 const getStoredRailWidth = (): number => {
   const stored = Number(localStorage.getItem(RAIL_WIDTH_STORAGE_KEY))
@@ -336,9 +382,17 @@ const AutopilotRail = () => {
   const [railWidth, setRailWidth] = useState(getStoredRailWidth)
   const [resizing, setResizing] = useState(false)
   const railElRef = useRef<HTMLElement>(null)
+  // Live viewport width, for the resize/history-split clamp above — see maxDockableWidth.
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth)
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
   // W4 KOG (FE-K2): the over-cap paste rejection note (cleared on the next successful attach).
   const [oasError, setOasError] = useState<string | null>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   // Auto-scroll the transcript to the latest content as it streams — but only when the user is
   // already near the bottom, so scrolling up to re-read a long reply isn't yanked back down. Each
   // streamed chunk produces a NEW `messages` array (immutable update in the provider), so this
@@ -356,11 +410,23 @@ const AutopilotRail = () => {
   // closed/disabled, `railWidth` (user-resizable, defaults 384) open, +HISTORY_EXTRA_WIDTH
   // when the history split view widens it further, 100% in full-width mode.
   useEffect(() => {
-    const dockedWidth = enabled && open ? railWidth + (historyOpen ? HISTORY_EXTRA_WIDTH : 0) : 0
+    const rawWidth = enabled && open ? railWidth + (historyOpen ? HISTORY_EXTRA_WIDTH : 0) : 0
+    const dockedWidth = Math.min(rawWidth, maxDockableWidth(viewportWidth))
     const width = enabled && open && fullWidth ? '100%' : `${dockedWidth}px`
     document.documentElement.style.setProperty('--autopilot-rail-width', width)
     return () => { document.documentElement.style.setProperty('--autopilot-rail-width', '0px') }
-  }, [enabled, open, historyOpen, fullWidth, railWidth])
+  }, [enabled, open, historyOpen, fullWidth, railWidth, viewportWidth])
+
+  // Keyboard nav: Tab cycles within the rail while it's open (see focusTrap.ts), Escape
+  // collapses it — same `setOpen(false)` as the "Collapse rail" button (a pending approval
+  // is untouched either way; only its own dismiss/deny/5-minute governor resolves it).
+  // Autofocus lands in the composer on open, mirroring CommandPalette's own autofocus-on-open.
+  useRailFocusTrap(open, railElRef, () => setOpen(false))
+  useEffect(() => {
+    if (open) {
+      textareaRef.current?.focus()
+    }
+  }, [open])
 
   // Speak-back (voice spec §3). Three wires, all of them one-way into the store:
   //  - the operator kill-switch (AUTOPILOT_VOICE_SPEAK_BACK: "off") removes the feature and
@@ -394,7 +460,11 @@ const AutopilotRail = () => {
     document.body.style.userSelect = 'none'
 
     const onMove = (moveEvent: PointerEvent) => {
-      setRailWidth(clampRailWidth(anchorRight - moveEvent.clientX - extra))
+      const next = clampRailWidth(anchorRight - moveEvent.clientX - extra)
+      // Floor at 200 even when `extra` (the history split) leaves less room than that on a
+      // narrow viewport — a small-but-usable drag range beats railWidth going negative.
+      const viewportMax = Math.max(200, maxDockableWidth(window.innerWidth) - extra)
+      setRailWidth(Math.min(next, viewportMax))
     }
     const onUp = () => {
       window.removeEventListener('pointermove', onMove)
@@ -503,7 +573,7 @@ const AutopilotRail = () => {
   const ctxStatus = context?.extras?.status
   const lastSuggestions = messages.length ? messages[messages.length - 1].suggestions : undefined
 
-  const dockedWidth = railWidth + (historyOpen ? HISTORY_EXTRA_WIDTH : 0)
+  const dockedWidth = Math.min(railWidth + (historyOpen ? HISTORY_EXTRA_WIDTH : 0), maxDockableWidth(viewportWidth))
 
   return (
     <aside
@@ -644,6 +714,7 @@ const AutopilotRail = () => {
                   onKeyDown={onKeyDown}
                   onPaste={onPaste}
                   placeholder='Ask Autopilot to do something…'
+                  ref={textareaRef}
                   rows={1}
                   value={draft}
                 />

@@ -63,6 +63,29 @@
   background: color-mix(in srgb, var(--primary-color) 45%, transparent);
 }
 
+/* Grip affordance: a faint vertical mark centered on the handle so it reads as draggable
+   at rest, not only once the cursor happens to land on it — brightens with the same
+   hover/dragging states as the handle's own background above. */
+.apResizeHandle::after {
+  background: var(--gray-color);
+  border-radius: 2px;
+  content: '';
+  height: 28px;
+  left: 2px;
+  opacity: 0.5;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: opacity var(--motion-mid, 0.2s) ease, background var(--motion-mid, 0.2s) ease;
+  width: 2px;
+}
+
+.apResizeHandle:hover::after,
+.apRail.resizing .apResizeHandle::after {
+  background: var(--primary-color);
+  opacity: 1;
+}
+
 .apRail.open {
   width: 384px;
 }
@@ -78,6 +101,24 @@
    historyOpen — see AutopilotRail.tsx). */
 .apRail.open.full {
   width: 100%;
+}
+
+/* ── responsive safety net ──
+   AutopilotRail.tsx clamps `railWidth`/the history split's extra width against the live
+   viewport (see MIN_MAIN_DOCK_RESERVE), but max-width here is the hard backstop: it wins
+   over the inline `style` width from JS on any viewport narrower than these breakpoints,
+   so a stale persisted rail width (dragged wide on a bigger screen) can never overflow the
+   shell or crush main content to nothing. `.full` is exempt — 100% is the intended width there. */
+@media (max-width: 1024px) {
+  .apRail.open:not(.full) {
+    max-width: calc(100vw - 200px);
+  }
+}
+
+@media (max-width: 640px) {
+  .apRail.open:not(.full) {
+    max-width: calc(100vw - 64px);
+  }
 }
 
 .apRailInner {
@@ -229,6 +270,41 @@
   border-right-color: var(--border-color);
   padding: 10px 6px;
   width: 220px;
+}
+
+.apHistorySearchWrap {
+  align-items: center;
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  display: flex;
+  gap: 6px;
+  margin: 0 6px 8px;
+  padding: 5px 7px;
+}
+
+.apHistorySearchWrap:focus-within {
+  border-color: color-mix(in srgb, var(--primary-color) 45%, transparent);
+}
+
+.apHistorySearchIcon {
+  color: var(--gray-color);
+  flex: none;
+}
+
+.apHistorySearchInput {
+  background: transparent;
+  border: none;
+  color: var(--dark-color);
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  min-width: 0;
+  outline: none;
+}
+
+.apHistorySearchInput::placeholder {
+  color: var(--gray-color);
 }
 
 .apHistoryList {
