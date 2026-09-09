@@ -10,8 +10,7 @@ import {
   readLocalResourceCondition,
   summarizePublishStatus,
   trackPublishStatus,
-  type LocalResourceStatus,
-} from './builderPublishStatus'
+  type LocalResourceStatus, stoppedWatchingNote } from './builderPublishStatus'
 import type { AutopilotMessage } from './types'
 
 describe('localResourceName', () => {
@@ -150,5 +149,26 @@ describe('trackPublishStatus', () => {
     expect(store[0].text).toContain('✗ `Chart.yaml`')
     expect(store[0].text).toContain('does not exist yet')
     expect(store[0].streaming).toBe(false)
+  })
+})
+
+describe('stoppedWatchingNote — the bound must not read as a verdict', () => {
+  const st = (name: string, ok: boolean | null, message = '') => ({ message, name, ok, path: name })
+
+  it('says nothing when everything resolved', () => {
+    expect(stoppedWatchingNote([st('p-000', true), st('p-001', false)], 30_000)).toBe('')
+  })
+
+  it('with pending and NO failures, says stopped watching — never "failed"', () => {
+    const note = stoppedWatchingNote([st('p-000', true), st('p-001', null)], 30_000)
+    expect(note).toContain('Stopped watching after 30s')
+    expect(note).toContain('nothing has failed')
+    expect(note.toLowerCase()).not.toContain('publish failed')
+  })
+
+  it('with pending AND failures, keeps the failures real', () => {
+    const note = stoppedWatchingNote([st('p-000', false), st('p-001', null)], 30_000)
+    expect(note).toContain('failures above are real')
+    expect(note).toContain('1 file(s) still pending')
   })
 })

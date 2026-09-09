@@ -144,6 +144,22 @@ export const summarizePublishStatus = (statuses: LocalResourceStatus[], target: 
   return `${head}\n\n${lines.join('\n')}${hint}`
 }
 
+/**
+ * The bound's closing sentence. A publish that is still pending after the poll window is NOT a
+ * failure — it is a publish we stopped watching, and saying otherwise would trade one wrong answer
+ * for another. Names how long we watched, so "slow" and "stuck" stop looking identical, and points
+ * at where the truth lives.
+ */
+export const stoppedWatchingNote = (statuses: LocalResourceStatus[], watchedMs: number): string => {
+  const pending = statuses.filter((status) => status.ok === null).length
+  if (pending === 0) { return '' }
+  const failed = statuses.filter((status) => status.ok === false).length
+  const seconds = Math.round(watchedMs / 1000)
+  return failed > 0
+    ? `\n\n⏱ Stopped watching after ${seconds}s with ${pending} file(s) still pending. The failures above are real; the rest may still complete.`
+    : `\n\n⏱ Stopped watching after ${seconds}s — ${pending} file(s) still pending and **nothing has failed**. A publish can legitimately take longer than this; publish again to re-check, or look at the LocalResources named \`${statuses[0]?.name.replace(/-\d+$/, '')}-*\` in the cluster.`
+}
+
 /** A publish's per-file destination — everything the poll driver needs to address the LocalResources. */
 export interface PublishStatusClaim {
   namespace: string
@@ -177,14 +193,21 @@ export const trackPublishStatus = (
   }
   render(summarizePublishStatus(pendingStatuses(claim.publishName, claim.paths), claim.target), true)
   void (async () => {
+    let last = pendingStatuses(claim.publishName, claim.paths)
     for (let round = 0; round < rounds; round += 1) {
       // eslint-disable-next-line no-await-in-loop -- poll loop: rounds are sequential by nature
       await new Promise((resolve) => { setTimeout(resolve, delayMs) })
       // eslint-disable-next-line no-await-in-loop -- poll loop
       const statuses = await fetchLocalResourceStatuses(config, claim.namespace, claim.publishName, claim.paths)
+      last = statuses
       const resolved = allResolved(statuses)
       render(summarizePublishStatus(statuses, claim.target), !resolved)
       if (resolved) { return }
     }
+    // The bound expired with files still pending. Returning here would leave the last render
+    // `streaming: true` forever — a message that LOOKS like it is still watching when nothing is.
+    // That is the same silence this feature exists to remove, just 30 seconds later, so say plainly
+    // that we stopped looking and that a still-pending publish is not a failed one.
+    render(`${summarizePublishStatus(last, claim.target)}${stoppedWatchingNote(last, delayMs * rounds)}`, false)
   })()
 }
