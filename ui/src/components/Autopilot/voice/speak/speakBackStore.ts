@@ -351,9 +351,16 @@ export const createSpeakBackStore = (initialDeps: SpeechDeps | null = browserSpe
       // the FR 78 replay with it — the offer to finish one specific answer cannot outlive
       // the engine that was going to finish it. The `voiceschanged` listener is NOT touched:
       // it belongs to the browser deps, which this call does not change.
+      const changed = ttsSpeaker !== next
       cancel()
       ttsSpeaker = next
-      logged = false
+      // Re-arm FR 79's at-most-once console line only when the ENGINE actually changed. The
+      // rail installs on every config read, so an unconditional reset turns "say once why
+      // nothing will be spoken" into a line per render — and the no-TTS path, which installs
+      // null repeatedly, is exactly where that would be loudest.
+      if (changed) {
+        logged = false
+      }
       refusedSpoken = ''
       set({ refusedMessageId: null })
       refreshCapability()

@@ -689,6 +689,16 @@
           "type": "string",
           "title": "Autopilot Voice Model",
           "default": "gemini-3.8-flash"
+        },
+        "AUTOPILOT_VOICE_TTS_URL": {
+          "type": "string",
+          "title": "Autopilot Voice Tts URL",
+          "default": ""
+        },
+        "AUTOPILOT_VOICE_NAME": {
+          "type": "string",
+          "title": "Autopilot Voice Name",
+          "default": "en-US-Chirp3-HD-Achernar"
         }
       },
       "default": {
@@ -711,7 +721,9 @@
         "AUTOPILOT_GIT_HOST": "github.com",
         "AUTOPILOT_VOICE_SPEAK_BACK": "on",
         "AUTOPILOT_VOICE_TRANSCRIBE_URL": "",
-        "AUTOPILOT_VOICE_MODEL": "gemini-3.8-flash"
+        "AUTOPILOT_VOICE_MODEL": "gemini-3.8-flash",
+        "AUTOPILOT_VOICE_TTS_URL": "",
+        "AUTOPILOT_VOICE_NAME": "en-US-Chirp3-HD-Achernar"
       }
     },
     "env": {

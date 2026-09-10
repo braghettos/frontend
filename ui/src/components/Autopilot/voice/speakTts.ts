@@ -235,18 +235,38 @@ export const createTtsSpeaker = (deps: TtsDeps): Speaker => {
       timer = setTimeout(() => settle((active) => active.onFinished()), TTS_REQUEST_TIMEOUT_MS)
 
       const play = (dataUrl: string): void => {
-        const ended = (): void => settle((active) => active.onFinished())
+        // STALE-GUARDED, like its two sibling continuations below. `release()` drops our
+        // reference to an element but cannot DETACH its handlers — the seam hands back an
+        // opaque handle — so a cancelled answer's element stays wired to this closure. Without
+        // the guard that closure reports into whatever `pending` holds NEXT, and because
+        // `settle()` calls `release()`, a dead clip's `ended` would abort the NEW answer's
+        // in-flight synthesize request: the next answer is never spoken while its full text
+        // sits in the chat. Reachable by speaking again mid-clip, and by FR 78's "Play answer"
+        // replay, where the just-refused element is still attached. `createSpeaker` guards the
+        // same spot (speechEngine.ts) and this has to match it.
+        const ended = (): void => {
+          if (isStale()) {
+            return
+          }
+          settle((active) => active.onFinished())
+        }
         const element = deps.createAudio(dataUrl, { onEnded: ended, onError: ended })
         if (!element) {
           ended()
           return
         }
         audio = element
+        // A seam whose createAudio reports synchronously has already settled us by here, and
+        // the assignment above would then leave a released element held. Hand it straight back.
+        if (!pending) {
+          release()
+          return
+        }
         clearTimer()
         timer = setTimeout(ended, playbackTimeoutMs(text))
-        // `Promise.resolve` rather than `.catch()` straight off `play()`: the seam admits
-        // an implementation that returns nothing, and a synchronous TypeError here would
-        // leave `pending` armed with no outcome ever reported — FR 74's failure exactly.
+        // `Promise.resolve` rather than `.catch()` straight off `play()`: the seam admits an
+        // implementation that returns nothing at all, and `Promise.resolve` normalises that
+        // to a promise so the rejection path below is reached the same way in both cases.
         void Promise.resolve(element.play()).catch((thrown: unknown) => {
           if (isStale()) {
             return

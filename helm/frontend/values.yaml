@@ -246,6 +246,21 @@ config:
   # The model that transcribes. Must be one the gateway routes to a backend accepting an
   # inline audio `file` part (a gemini-* model on the Vertex backend does).
   AUTOPILOT_VOICE_MODEL: gemini-3.8-flash
+  # Where speak-back sends the answer text to be SPOKEN. Empty (the default) means the answer
+  # is read by the BROWSER's own speechSynthesis, pinned to voices reporting localService:true
+  # — a privacy requirement, since a remote browser voice ships the answer text to the voice
+  # vendor, and also why that reading sounds the way it does and why speak-back is unavailable
+  # outright on a machine with no local voice.
+  #
+  # Set it to the portal-origin /tts/v1 route (agentgateway-policies tts.enabled) to use Google
+  # Cloud Text-to-Speech instead. The browser calls it with its OWN portal bearer and never
+  # holds a Google credential — the gateway backend mints that. Cloud TTS is a RENDERER: it
+  # speaks the string it is given, which is what keeps the spoken words identical to the
+  # written ones. A generative speech model cannot promise that, so this must not be pointed
+  # at one. Requires HTTPS on the portal, as the transcription URL above does.
+  AUTOPILOT_VOICE_TTS_URL: ""
+  # The Cloud TTS voice. Only consulted when AUTOPILOT_VOICE_TTS_URL is set.
+  AUTOPILOT_VOICE_NAME: en-US-Chirp3-HD-Achernar
 
 # ── Preview sandbox (portal-builder live preview; w4 spec Addendum A) ─────────
 # Provisions the quarantined namespace where the portal-builder applies DRAFT

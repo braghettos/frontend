@@ -54,6 +54,18 @@ describe('speak-back cannot make a network call (voice spec FR 65/68)', () => {
     expect(verdicts).toHaveLength(2)
   }, 120_000)
 
+  it('refuses the .ts spelling too — tsconfig allows it, so an extensionless pattern is a hole', async () => {
+    // `allowImportingTsExtensions` is on, so `'../speakTts.ts'` compiles and Vite resolves it.
+    // A fence that only matches one accepted spelling of the same module is not a fence.
+    const verdicts = await fenceVerdicts([
+      'import { createTtsSpeaker } from \'../speakTts.ts\'',
+      'import { a2aAuthHeader } from \'../../transport.ts\'',
+      'void createTtsSpeaker; void a2aAuthHeader',
+      '',
+    ].join('\n'))
+    expect(verdicts).toHaveLength(2)
+  }, 120_000)
+
   it('lets the store as committed through — the fence bans the import, not the feature', async () => {
     expect(await fenceVerdicts(await readFile(fencedFile, 'utf8'))).toHaveLength(0)
   }, 120_000)
