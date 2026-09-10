@@ -551,6 +551,14 @@ export default tsEslint.config(
   // generated summary — so a model call on that path must not compile. The dictation half
   // one level up DOES import `transcribe.ts`; that is its whole job, and fencing it there
   // would ban the feature rather than the failure mode.
+  //
+  // `speakTts` — the Cloud TTS client — is banned here for the same reason and is WHY it
+  // lives one level up, in `voice/speakTts.ts`, rather than beside the store it serves. It
+  // is a network call, and this directory makes NO network calls of any kind: that is what
+  // reduces FR 68 from a promise to a fact a reader can check by grep. The TTS speaker
+  // reaches the store the only way anything crosses this fence — INJECTED, as a `Speaker`,
+  // by voiceWiring.ts through speakBackStore.installSpeaker(). Moving the file in here to
+  // save an import would quietly re-open the path this rule exists to close.
   {
     files: ['src/components/Autopilot/voice/speak/**/*.{ts,tsx}'],
     name: 'Speak-back cannot call a model (voice spec FR 68)',
@@ -562,8 +570,8 @@ export default tsEslint.config(
           name: 'antd',
         }],
         patterns: [{
-          group: ['**/transport', '**/AutopilotProvider', '**/transcribe'],
-          message: 'Nothing under Autopilot/voice/speak/ may import the A2A transport, the provider\'s send(), or the transcription client: the spoken answer is a pure local transform of the exact words already written in the chat, never a second model call (voice spec FR 65/68).',
+          group: ['**/transport', '**/AutopilotProvider', '**/transcribe', '**/speakTts'],
+          message: 'Nothing under Autopilot/voice/speak/ may import the A2A transport, the provider\'s send(), the transcription client, or the Cloud TTS client: the spoken answer is a pure local transform of the exact words already written in the chat, never a second model call, and this directory makes no network calls at all (voice spec FR 65/68). The TTS speaker is INJECTED from voiceWiring.ts via speakBackStore.installSpeaker().',
         }],
       }],
     },

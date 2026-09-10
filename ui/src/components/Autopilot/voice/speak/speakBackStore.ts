@@ -67,7 +67,11 @@ export interface SpeakBackState {
    * most likely to be disabled over, and it would be one we authored ourselves.
    */
   announcement: string
-  /** FR 79: synthesis exists, at least one LOCAL voice exists, and config does not say off. */
+  /**
+   * FR 79: config does not say off, AND there is something that can speak — either an
+   * injected TTS speaker (which brings its own voice) or synthesis with at least one LOCAL
+   * voice.
+   */
   available: boolean
   /** FR 76: the per-user preference, default on. Persisted. */
   enabled: boolean
@@ -102,6 +106,18 @@ export interface SpeakBackStore {
   /** FR 77: hide the first-use line for good. */
   dismissNotice: () => void
   getSnapshot: () => SpeakBackState
+  /**
+   * Replace the SPEAKER itself, rather than the browser synthesiser under it. A non-null
+   * speaker (the Cloud TTS one `voiceWiring` builds when `AUTOPILOT_VOICE_TTS_URL` is
+   * configured) takes over from the browser voice entirely; null restores it, so an install
+   * with no TTS endpoint keeps today's behaviour byte for byte.
+   *
+   * The SEAM IS `Speaker`, not `SpeechDeps`, and that is the whole point: the store hands
+   * whatever is installed the very same `speakableForMessage()` string, so FR 68's
+   * "the spoken words are the written words" survives the swap by construction — nothing on
+   * the fidelity path knows which speaker is behind it.
+   */
+  installSpeaker: (speaker: Speaker | null) => void
   /** Replace the platform seam. Production passes the browser deps; tests pass a fake. */
   installSpeechDeps: (deps: SpeechDeps | null) => void
   /** FR 79: one console line naming why speak-back is unavailable, at most once. */
@@ -163,7 +179,12 @@ const uiLanguage = (): string => {
 export const createSpeakBackStore = (initialDeps: SpeechDeps | null = browserSpeechDeps()): SpeakBackStore => {
   const listeners = new Set<() => void>()
   let deps: SpeechDeps | null = initialDeps
-  let speaker: Speaker | null = deps ? createSpeaker(deps) : null
+  let browserSpeaker: Speaker | null = deps ? createSpeaker(deps) : null
+  // The injected replacement (Cloud TTS), when an install has one. Kept BESIDE the browser
+  // speaker rather than overwriting it, so removing the injection restores the browser
+  // voice without rebuilding it from deps that may have changed underneath.
+  let ttsSpeaker: Speaker | null = null
+  const activeSpeaker = (): Speaker | null => ttsSpeaker ?? browserSpeaker
   let configAllowed = true
   let logged = false
   let logRequested = false
@@ -219,10 +240,22 @@ export const createSpeakBackStore = (initialDeps: SpeechDeps | null = browserSpe
     console.info(`[autopilot] speak-back unavailable: ${why}`)
   }
 
-  /** FR 79: available iff synthesis exists AND a LOCAL voice exists AND config is not off. */
+  /**
+   * FR 79: available iff config is not off AND something can speak.
+   *
+   * The operator kill-switch is tested FIRST and therefore wins over everything, including
+   * an installed TTS speaker — `AUTOPILOT_VOICE_SPEAK_BACK: "off"` removes the feature, and
+   * an install that also configured a TTS endpoint has not thereby un-removed it.
+   *
+   * An installed TTS speaker then short-circuits the voice inventory: it brings its own
+   * voice, so `no-local-voice` would be a false report about a machine whose local voices
+   * are not being used at all — and it would take a working feature off the air.
+   */
   const refreshCapability = (): void => {
     if (!configAllowed) {
       set({ available: false, reason: 'disabled' })
+    } else if (ttsSpeaker) {
+      set({ available: true, reason: null })
     } else if (!deps) {
       set({ available: false, reason: 'no-synthesis' })
     } else {
@@ -258,12 +291,13 @@ export const createSpeakBackStore = (initialDeps: SpeechDeps | null = browserSpe
    * heard-but-not-recorded failure the single-trigger rule exists to prevent.
    */
   const cancel = (): void => {
-    speaker?.cancel()
+    activeSpeaker()?.cancel()
     refusedSpoken = ''
     set({ announcement: '', refusedMessageId: null, speaking: false })
   }
 
   const startSpeaking = (spoken: string, messageId: string): boolean => {
+    const speaker = activeSpeaker()
     if (!speaker) {
       return false
     }
@@ -280,8 +314,10 @@ export const createSpeakBackStore = (initialDeps: SpeechDeps | null = browserSpe
       },
     })
     if (!started) {
-      // No local voice at the moment of speaking (the inventory can change) — treat it as
-      // unavailability, never as a reason to reach for a remote voice.
+      // The browser speaker says false when the inventory lost its last LOCAL voice between
+      // the capability check and this call; the TTS one says it only when there is nothing
+      // to say. Re-deriving the capability covers the first without having to know which
+      // speaker is installed, and never reaches for a remote browser voice either way.
       refreshCapability()
       return false
     }
@@ -308,11 +344,25 @@ export const createSpeakBackStore = (initialDeps: SpeechDeps | null = browserSpe
     cancel,
     dismissNotice: () => set({ noticeVisible: false }),
     getSnapshot: () => state,
+    installSpeaker: (next) => {
+      // Cancel first, for the same reason installSpeechDeps below does: whatever is
+      // mid-answer belongs to the OLD speaker, which is about to stop being the one the Stop
+      // button reaches, and a swap must not orphan a voice that is still talking. It drops
+      // the FR 78 replay with it — the offer to finish one specific answer cannot outlive
+      // the engine that was going to finish it. The `voiceschanged` listener is NOT touched:
+      // it belongs to the browser deps, which this call does not change.
+      cancel()
+      ttsSpeaker = next
+      logged = false
+      refusedSpoken = ''
+      set({ refusedMessageId: null })
+      refreshCapability()
+    },
     installSpeechDeps: (next) => {
       cancel()
       detachVoices()
       deps = next
-      speaker = next ? createSpeaker(next) : null
+      browserSpeaker = next ? createSpeaker(next) : null
       logged = false
       refusedSpoken = ''
       set({ refusedMessageId: null })

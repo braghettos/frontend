@@ -111,6 +111,22 @@ export interface Config {
     /** The model that transcribes. Must be one the gateway routes to a backend that
      * accepts an inline audio `file` part; defaults to `gemini-3.8-flash`. */
     AUTOPILOT_VOICE_MODEL?: string
+    /** Where an answer is sent to be SPOKEN — a full absolute URL to a Google Cloud
+     * Text-to-Speech `text:synthesize` on the agent gateway (`<portal-origin>/tts/v1/text:synthesize`
+     * on the platform TLS listener). ITS PRESENCE IS THE ON/OFF SWITCH, the same way
+     * `AUTOPILOT_VOICE_TRANSCRIBE_URL` gates dictation: absent or empty, speak-back keeps
+     * using the browser's `speechSynthesis` pinned to on-device voices, byte for byte as
+     * before this key existed. The browser carries only ITS OWN portal bearer — the gateway
+     * route is Strict-JWT gated and holds the GCP credential, so no Google credential ever
+     * reaches the page. Independent of `AUTOPILOT_VOICE_SPEAK_BACK`, which stays the
+     * operator kill-switch and still wins over this. */
+    AUTOPILOT_VOICE_TTS_URL?: string
+    /** The Cloud TTS voice that reads answers, e.g. `en-US-Chirp3-HD-Achernar` (the
+     * in-code default). Only consulted when `AUTOPILOT_VOICE_TTS_URL` is set. The NAME
+     * carries the language — a voice serves one — so an install that wants answers read in
+     * another language names a voice for it here rather than relying on the browser's
+     * `navigator.language`. */
+    AUTOPILOT_VOICE_NAME?: string
   }
   params: {
     FRONTEND_NAMESPACE: string

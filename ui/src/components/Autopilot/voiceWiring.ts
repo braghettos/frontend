@@ -18,6 +18,9 @@
  * WHAT IT WIRES
  *   · capability + language, re-evaluated when config loads and on window focus (FR 6);
  *   · the transcription dependencies, rebuilt when the URL or model changes;
+ *   · the SPEAK-BACK speaker: Cloud TTS when the install configured an endpoint, and the
+ *     browser's on-device synthesiser when it did not (see `voice/speakTts.ts` for why the
+ *     client cannot live under `voice/speak/` and therefore has to be handed in from here);
  *   · the conversation sink — the rail's submit, so a purely-spoken draft sends itself;
  *   · the microphone permission watcher, including a revocation that lands MID-RECORDING;
  *   · the vocabulary bias, from the same live page context the turn already carries,
@@ -35,6 +38,7 @@ import { a2aAuthHeader, rateLimitNotice } from './transport'
 import type { PageContextEnvelope } from './types'
 import { watchMicrophonePermission } from './voice/permission'
 import { autopilotSpeakBackStore } from './voice/speak/speakBackStore'
+import { browserTtsAudio, createTtsSpeaker, DEFAULT_TTS_VOICE } from './voice/speakTts'
 import { DEFAULT_VOICE_MODEL } from './voice/transcribe'
 import { autopilotVoiceStore } from './voice/voiceStore'
 
@@ -150,6 +154,28 @@ export const useVoiceWiring = (
       url: transcribeUrl,
     })
   }, [transcribeUrl, model])
+
+  // SPEAK-BACK'S VOICE. The URL is the on/off switch, exactly as it is for dictation: with
+  // no endpoint configured the store keeps the browser synthesiser and its `localService`
+  // pin, unchanged. With one, Cloud TTS replaces it — same `Speaker` contract, same
+  // `speakableForMessage()` string, so nothing on the FR 68 fidelity path moves. The bearer
+  // is `a2aAuthHeader` and NOTHING else: the gateway route holds the GCP credential, and a
+  // page that never has one cannot leak one.
+  const ttsUrl = config?.api.AUTOPILOT_VOICE_TTS_URL
+  const voiceName = config?.api.AUTOPILOT_VOICE_NAME
+  useEffect(() => {
+    if (!ttsUrl) {
+      autopilotSpeakBackStore.installSpeaker(null)
+      return
+    }
+    autopilotSpeakBackStore.installSpeaker(createTtsSpeaker({
+      authHeader: a2aAuthHeader,
+      createAudio: browserTtsAudio,
+      fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, init),
+      url: ttsUrl,
+      voiceName: voiceName || DEFAULT_TTS_VOICE,
+    }))
+  }, [ttsUrl, voiceName])
 
   // CONVERSATION MODE: the rail's submit reaches the store through a ref, NOT as an effect
   // dependency. `submitSpokenTurn` closes over live rail state and so is a new function on
