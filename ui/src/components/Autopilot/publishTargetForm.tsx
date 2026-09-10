@@ -13,6 +13,8 @@
 import { Form, Input, Modal, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 
+import { ABOVE_PREVIEW_DRAWER_Z_INDEX } from '../../hooks/confirmModalProps'
+
 export interface PublishTarget {
   owner: string
   repo: string
@@ -116,6 +118,14 @@ export const PublishTargetFormHost = () => {
       }}
       open={pending !== null}
       title={`Where should this ${pending ? KIND_NOUN[pending.req.kind] : 'page'} be committed?`}
+      // ABOVE THE PREVIEW DRAWER. This form is opened BY a publish the user started from
+      // the preview, so the drawer is always up behind it. In antd 6 both surfaces default
+      // to `token.zIndexPopupBase` (1000) and the drawer pins itself there explicitly, so a
+      // tie is decided by DOM order — and the always-mounted drawer wins, clipping this
+      // form and putting "Confirm destination" somewhere the user can neither see nor
+      // click. The blast-radius confirm was raised for exactly this reason; this second
+      // gate on the same flow was missed until a tester hit it.
+      zIndex={ABOVE_PREVIEW_DRAWER_Z_INDEX}
     >
       <div data-testid='publish-target-form'>
         <Typography.Paragraph type='secondary'>
