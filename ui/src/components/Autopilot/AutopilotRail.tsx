@@ -37,7 +37,7 @@ import { SpeakBackStatus, SpeakBackToggle } from './voice/speak/SpeakBackControl
 import { autopilotSpeakBackStore } from './voice/speak/speakBackStore'
 import { useVoiceBusy, VoiceButton, VoiceStatus } from './voice/VoiceControl'
 import { autopilotVoiceStore } from './voice/voiceStore'
-import { useVoiceWiring } from './voiceWiring'
+import { escapeInterruptsVoice, useVoiceWiring } from './voiceWiring'
 
 /** What the agent looked up, never what it read back. */
 const EvidenceRow = ({ entry }: { entry: EvidenceEntry }) => {
@@ -417,11 +417,27 @@ const AutopilotRail = () => {
     return () => { document.documentElement.style.setProperty('--autopilot-rail-width', '0px') }
   }, [enabled, open, historyOpen, fullWidth, railWidth, viewportWidth])
 
-  // Keyboard nav: Tab cycles within the rail while it's open (see focusTrap.ts), Escape
-  // collapses it — same `setOpen(false)` as the "Collapse rail" button (a pending approval
-  // is untouched either way; only its own dismiss/deny/5-minute governor resolves it).
-  // Autofocus lands in the composer on open, mirroring CommandPalette's own autofocus-on-open.
-  useRailFocusTrap(open, railElRef, () => setOpen(false))
+  // Keyboard nav: Tab cycles within the rail while it's open (see focusTrap.ts). Autofocus
+  // lands in the composer on open, mirroring CommandPalette's own autofocus-on-open.
+  //
+  // ESCAPE IS LAYERED, and this is the rail's ONLY Escape handler. The trap listens
+  // NATIVELY on the rail container and stops propagation, and React 19 delegates from the
+  // ROOT — above that container — so an `onKeyDown` Escape branch on the composer can never
+  // run. Every Escape meaning therefore has to be decided here, innermost first:
+  //
+  //   1. a spoken answer is playing  → stop the voice, leave the rail open (FR 75);
+  //   2. the microphone is live      → cancel dictation, draft untouched (FR 13);
+  //   3. otherwise                   → collapse, as the "Collapse rail" button does.
+  //
+  // Innermost-first is what makes Escape usable in conversation mode: the gesture that
+  // interrupts a voice reading an answer must not also close the rail it was read from. A
+  // pending approval is untouched at every layer; only its own dismiss/deny/5-minute
+  // governor resolves it.
+  useRailFocusTrap(open, railElRef, () => {
+    if (!escapeInterruptsVoice()) {
+      setOpen(false)
+    }
+  })
   useEffect(() => {
     if (open) {
       textareaRef.current?.focus()
@@ -487,17 +503,12 @@ const AutopilotRail = () => {
   // guard so the dictation hook below it stays unconditional.
   const context = enabled && open ? collect() : null
 
-  // Dictation (voice spec §2), wired one directory outside `voice/` — the ESLint fence
-  // keeps the voice modules away from the transport and `send`, so the bearer, the
-  // rate-limit detector and the session resume are injected from the permitted side.
-  useVoiceWiring(enabled && open, context)
-
-  if (!enabled) {
-    return null
-  }
-
   const submit = () => {
-    const text = draft.trim()
+    // Read the draft from the STORE, not the `draft` render value. Conversation mode calls
+    // this straight out of the voice store's commit, in the same tick the transcript was
+    // appended — before React has re-rendered — so the render value is one segment stale
+    // there and would send the question without its last words.
+    const text = autopilotComposerDraftStore.getSnapshot().text.trim()
     // FR 25's hold on Send belongs HERE, not only on the button: Enter is the habitual send
     // gesture, and pressing it mid-transcription would send the typed half of a question —
     // "restart the payments deployment in" — then clear the draft, so the words still
@@ -513,25 +524,35 @@ const AutopilotRail = () => {
     send(text, { modality })
   }
 
+  // Dictation (voice spec §2), wired one directory outside `voice/` — the ESLint fence
+  // keeps the voice modules away from the transport and `send`, so the bearer, the
+  // rate-limit detector and the session resume are injected from the permitted side.
+  // The spoken turn sends itself (voice spec FR 11, revised): the store reports a completed
+  // purely-dictated draft, the rail submits it, and the turn is stamped `voice`, so the
+  // answer is spoken back AND written to the transcript like any other turn.
+  useVoiceWiring(enabled && open, context, submit)
+
+  if (!enabled) {
+    return null
+  }
+
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
-      // ENTER WHILE LISTENING STOPS CAPTURE AND DOES NOT SUBMIT (voice spec FR 10). The
-      // user has not yet SEEN the transcript, and auto-sending words nobody has read is
-      // precisely the mishearing-triggers-an-action risk the whole feature is built to
-      // exclude. They read it, then press Enter again.
+      // ENTER WHILE LISTENING ENDS THE UTTERANCE, it does not submit here (voice spec FR
+      // 10). There is nothing in the composer yet to send — the audio has not been
+      // transcribed. Stopping capture is what starts that, and in conversation mode the
+      // finished transcript sends itself, so Enter still reads as "I'm done talking".
       if (autopilotVoiceStore.getSnapshot().phase === 'listening') {
         autopilotVoiceStore.stop()
         return
       }
       submit()
     }
-    // Escape stops a spoken answer (FR 75) and cancels dictation (FR 13) — the recording
-    // is discarded, nothing is uploaded, the draft is left exactly as it was.
-    if (event.key === 'Escape') {
-      autopilotSpeakBackStore.cancel()
-      autopilotVoiceStore.cancel()
-    }
+    // NO ESCAPE BRANCH HERE, deliberately. The focus trap takes Escape natively on the rail
+    // container and stops propagation before React's root dispatcher sees it, so a branch
+    // here would be dead code that reads like live behaviour. Escape's layers (stop the
+    // spoken answer / cancel dictation / collapse) all live in the trap's handler above.
   }
 
   // FR 57: matched on `event.code`, so macOS does not insert "µ" into the textarea, and
