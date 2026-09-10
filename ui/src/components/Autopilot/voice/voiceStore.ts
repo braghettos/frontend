@@ -25,11 +25,23 @@
  * textarea's OpenAPI paste capture is not tripped by a transcript — and it lands with the
  * provenance that decides whether the answer is spoken back.
  *
- * VOICE NEVER SENDS (FR 11). There is no call to `send()` here and there cannot be one:
- * an ESLint rule fences this directory from the transport and the provider. Dictation
- * fills the textarea; only the user pressing Send submits. Everything the call needs from
- * outside the fence — the portal bearer, the rate-limit detector, the session resume —
- * arrives through `installTranscribeDeps`, wired once by the rail.
+ * CONVERSATION MODE (FR 11, revised by the owner). Pressing the microphone is a spoken
+ * TURN, not a dictation aid: when the transcript lands and every word in the draft came
+ * from speech, the turn is sent without a Send press, the answer is spoken back (FR 67),
+ * and BOTH halves are written into the chat transcript like any typed turn — a spoken
+ * exchange leaves exactly the same readable record, which is what an incident review
+ * reads afterwards.
+ *
+ * That does NOT relax the fence. This directory still imports neither the transport nor
+ * the provider, and the ESLint rule that makes that structural still stands: the store
+ * cannot reach `send()`, it can only report that a spoken turn is COMPLETE. The decision
+ * to submit is made outside the fence by the rail, which injects the handler through
+ * `installConversationSink` — the same dependency arrow as `installTranscribeDeps`, which
+ * carries the portal bearer, the rate-limit detector and the session resume in.
+ *
+ * A draft the keyboard has touched is never auto-sent. `appendDictatedSegment` keeps a
+ * typed draft `typed` forever, so a half-written question you are dictating INTO stays
+ * yours to send: the sink fires only on a `dictated` draft.
  *
  * BARGE-IN (FR 75): starting capture CANCELS speak-back first, before the microphone is
  * opened, so the synthesiser is never recorded reading the previous answer back.
@@ -77,6 +89,12 @@ export interface VoiceStore {
   /** FR 22: clear the error line (a keystroke in the textarea, or the next press). */
   dismissError: () => void
   getSnapshot: () => VoiceState
+  /**
+   * Wire the SEND half of conversation mode. Called with the full spoken draft the moment
+   * a transcript completes a purely-dictated draft; the rail submits it. `null` unwires,
+   * which returns the microphone to fill-the-composer dictation.
+   */
+  installConversationSink: (sink: ((text: string) => void) | null) => void
   /** Replace the capture seam. Production passes the browser deps; tests pass a fake. */
   installRecorderDeps: (deps: RecorderDeps | null) => void
   /** Wire the pieces that live outside the voice fence (bearer, rate limit, resume). */
@@ -116,6 +134,8 @@ export const VOICE_ANNOUNCEMENTS = Object.freeze({
   cancelled: 'Dictation cancelled',
   listening: 'Listening',
   nothing: 'Nothing added',
+  /** Conversation mode: the spoken turn went to the agent without a Send press. */
+  sent: 'Sent',
   transcribing: 'Transcribing…',
 })
 
@@ -154,6 +174,7 @@ export const createVoiceStore = (
   // and the recording from running on to its own auto-stop.
   let stopRequested = false
   let controller: AbortController | null = null
+  let conversationSink: ((text: string) => void) | null = null
   let phaseTimer: ReturnType<typeof setTimeout> | null = null
   let slowTimer: ReturnType<typeof setTimeout> | null = null
   let logged = false
@@ -214,6 +235,19 @@ export const createVoiceStore = (
   const commit = (text: string): void => {
     autopilotComposerDraftStore.appendDictatedSegment(text)
     const words = text.trim().split(/\s+/).filter(Boolean).length
+    const draft = autopilotComposerDraftStore.getSnapshot()
+    // CONVERSATION MODE. A draft that is entirely spoken completes a turn on its own: the
+    // sink the rail injected sends it, so speaking IS the send gesture. The gate is the
+    // draft's provenance rather than "did dictation just run", which is what keeps a
+    // half-typed question the user is dictating into (`typed`, permanently) from being
+    // sent out from under them mid-edit.
+    if (conversationSink && draft.provenance === 'dictated' && draft.text.trim()) {
+      // Announce the SEND, not the word count: in conversation mode the words are already
+      // on their way, and "Added 7 words" would describe a composer the user never sees.
+      announce(VOICE_ANNOUNCEMENTS.sent)
+      conversationSink(draft.text)
+      return
+    }
     announce(`Added ${words} ${words === 1 ? 'word' : 'words'}`)
   }
 
@@ -412,6 +446,9 @@ export const createVoiceStore = (
       }
     },
     getSnapshot: () => state,
+    installConversationSink: (sink) => {
+      conversationSink = sink
+    },
     installRecorderDeps: (deps) => {
       cancel()
       recorderDeps = deps

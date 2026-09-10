@@ -3,12 +3,14 @@
  * deliberately not allowed to import itself.
  *
  * WHY THIS FILE EXISTS AT ALL, one directory OUTSIDE `voice/`. An ESLint rule fences
- * everything under `voice/` from `transport.ts` and `AutopilotProvider`, so that voice
- * input CANNOT send a turn — the invariant is structural rather than a promise, and it is
- * not relaxed for the sake of three convenient imports. But the transcription call still
- * needs the portal bearer, the ONE rate-limit detector (FR 55 — not a second copy of it)
- * and the in-place session resume. Those arrive here, on the permitted side of the fence,
- * and are handed to the store. The dependency arrow points INTO `voice/` and never out.
+ * everything under `voice/` from `transport.ts` and `AutopilotProvider`, so that the voice
+ * code CANNOT reach the transport itself — the invariant is structural rather than a
+ * promise, and it is not relaxed for the sake of a few convenient imports. But the work
+ * still needs things from this side: the portal bearer, the ONE rate-limit detector (FR 55
+ * — not a second copy of it), the in-place session resume, and now the SEND that turns a
+ * finished transcript into a chat turn. All of them arrive here, on the permitted side of
+ * the fence, and are handed to the store. The dependency arrow points INTO `voice/`, never
+ * out, so the microphone completes a turn without ever holding the means to send one.
  *
  * It also keeps `AutopilotRail.tsx` inside its 500-line ESLint budget, which is a real
  * constraint rather than a stylistic one.
@@ -16,13 +18,14 @@
  * WHAT IT WIRES
  *   · capability + language, re-evaluated when config loads and on window focus (FR 6);
  *   · the transcription dependencies, rebuilt when the URL or model changes;
+ *   · the conversation sink — the rail's submit, so a purely-spoken draft sends itself;
  *   · the microphone permission watcher, including a revocation that lands MID-RECORDING;
  *   · the vocabulary bias, from the same live page context the turn already carries,
  *     redacted through the same chokepoint (FR 54);
  *   · one console line, on first rail open, naming why dictation is unavailable (FR 5).
  */
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 import { useConfigContext } from '../../context/ConfigContext'
 import { raiseSessionExpired } from '../../utils/sessionResume'
@@ -47,6 +50,30 @@ import { autopilotVoiceStore } from './voice/voiceStore'
 export const stopVoice = (): void => {
   autopilotSpeakBackStore.cancel()
   autopilotVoiceStore.cancel()
+}
+
+/**
+ * ESCAPE'S VOICE LAYERS. Returns true when Escape was CONSUMED by voice and the rail must
+ * stay open; false when nothing was speaking or listening and Escape means "collapse".
+ *
+ * Innermost first — stop the answer being read before cancelling a microphone that is not
+ * even open — because in conversation mode Escape is the interrupt gesture, and the press
+ * that shuts a voice up must not also close the rail the answer is written in.
+ *
+ * It lives here, beside `stopVoice`, rather than in the rail: this file is where the two
+ * voice stores are already coordinated as one, and the rail is at its 500-line budget.
+ */
+export const escapeInterruptsVoice = (): boolean => {
+  if (autopilotSpeakBackStore.getSnapshot().speaking) {
+    autopilotSpeakBackStore.cancel()
+    return true
+  }
+  const { phase } = autopilotVoiceStore.getSnapshot()
+  if (phase === 'listening' || phase === 'transcribing') {
+    autopilotVoiceStore.cancel()
+    return true
+  }
+  return false
 }
 
 /** How many page names ride along as vocabulary bias before the block is capped. */
@@ -88,9 +115,14 @@ export const contextVocabulary = (context: PageContextEnvelope | null): string[]
 /**
  * Wire dictation for the lifetime of the rail. `collect` is the rail's live page-context
  * snapshot (called only while the rail is open, as it already is for the "seeing …"
- * strip); `open` drives the console line and the collapse teardown.
+ * strip); `open` drives the console line and the collapse teardown; `submitSpokenTurn`
+ * sends a completed spoken draft (conversation mode).
  */
-export const useVoiceWiring = (open: boolean, context: PageContextEnvelope | null): void => {
+export const useVoiceWiring = (
+  open: boolean,
+  context: PageContextEnvelope | null,
+  submitSpokenTurn: (text: string) => void,
+): void => {
   const { config } = useConfigContext()
   const transcribeUrl = config?.api.AUTOPILOT_VOICE_TRANSCRIBE_URL
   const model = config?.api.AUTOPILOT_VOICE_MODEL
@@ -118,6 +150,18 @@ export const useVoiceWiring = (open: boolean, context: PageContextEnvelope | nul
       url: transcribeUrl,
     })
   }, [transcribeUrl, model])
+
+  // CONVERSATION MODE: the rail's submit reaches the store through a ref, NOT as an effect
+  // dependency. `submitSpokenTurn` closes over live rail state and so is a new function on
+  // every render; installing it directly would re-wire the store on every keystroke, and a
+  // missed re-wire would leave a stale closure holding a cleared draft. The ref is written
+  // on each render and the store is handed ONE stable adapter, for the rail's lifetime.
+  const submitRef = useRef(submitSpokenTurn)
+  submitRef.current = submitSpokenTurn
+  useEffect(() => {
+    autopilotVoiceStore.installConversationSink((text) => submitRef.current(text))
+    return () => autopilotVoiceStore.installConversationSink(null)
+  }, [])
 
   // FR 19: the watcher, not a check at press time — a permission granted or revoked in the
   // address bar must move the control live, including mid-recording.

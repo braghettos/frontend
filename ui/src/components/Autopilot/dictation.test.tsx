@@ -350,7 +350,7 @@ describe('stopping, on every path a user expects', () => {
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 
-  it('ENTER while listening stops capture and DOES NOT SUBMIT (FR 10)', async () => {
+  it('ENTER while listening ends the utterance, and the spoken turn then sends itself (FR 10)', async () => {
     makeAvailable()
     const send = vi.fn()
     setValue({ send })
@@ -361,9 +361,12 @@ describe('stopping, on every path a user expects', () => {
     fireEvent.keyDown(getByPlaceholderText(PLACEHOLDER), { key: 'Enter' })
     await act(() => settle())
 
-    // The words the user has not yet READ must never become a turn on their own.
-    expect(send).not.toHaveBeenCalled()
-    expect((getByPlaceholderText(PLACEHOLDER) as HTMLTextAreaElement).value).toBe('scale payments to three replicas')
+    // Enter reads as "I am done talking": it ends capture rather than submitting an empty
+    // composer, and conversation mode carries the finished transcript the rest of the way.
+    expect(send).toHaveBeenCalledTimes(1)
+    expect(send).toHaveBeenCalledWith('scale payments to three replicas', { modality: 'voice' })
+    // The composer is left empty — the words are in the transcript, not waiting to be sent.
+    expect((getByPlaceholderText(PLACEHOLDER) as HTMLTextAreaElement).value).toBe('')
   })
 
   it('the status row Cancel discards the recording', async () => {
@@ -463,11 +466,11 @@ describe('stopping, on every path a user expects', () => {
 
 // ────────────────────────────────────────────────────────────────────────────────────
 describe('the loop that makes speak-back reachable', () => {
-  it('dictate → Send produces a VOICE turn carrying exactly the transcribed words', async () => {
+  it('speaking IS the send: a spoken turn goes on its own, stamped VOICE, with the composer left empty', async () => {
     makeAvailable()
     const send = vi.fn()
     setValue({ send })
-    const { getByLabelText, getByPlaceholderText, getByTestId } = render(<AutopilotRail />)
+    const { getByPlaceholderText, getByTestId } = render(<AutopilotRail />)
     withFakeTranscriber()
 
     fireEvent.click(getByTestId('autopilot-voice-button'))
@@ -476,12 +479,41 @@ describe('the loop that makes speak-back reachable', () => {
     fireEvent.click(getByTestId('autopilot-voice-button'))
     await act(() => settle())
 
-    expect((getByPlaceholderText(PLACEHOLDER) as HTMLTextAreaElement).value).toBe('scale payments to three replicas')
-    // Nothing was sent by dictating — only the human's Send press does that (FR 11).
-    expect(send).not.toHaveBeenCalled()
-
-    fireEvent.click(getByLabelText('Send'))
+    // CONVERSATION MODE (FR 11, revised): no Send press. The words carry exactly what was
+    // transcribed, and the `voice` stamp is what makes the answer spoken back (FR 67) — the
+    // two halves of a conversation, both written to the transcript like any typed turn.
+    expect(send).toHaveBeenCalledTimes(1)
     expect(send).toHaveBeenCalledWith('scale payments to three replicas', { modality: 'voice' })
+    // The composer is empty afterwards: the question is in the transcript, not left behind
+    // to be sent a second time by a subsequent Enter.
+    expect((getByPlaceholderText(PLACEHOLDER) as HTMLTextAreaElement).value).toBe('')
+    expect(autopilotComposerDraftStore.getSnapshot().provenance).toBe('empty')
+  })
+
+  it('a draft the keyboard has touched is NEVER sent out from under the user', async () => {
+    makeAvailable()
+    const send = vi.fn()
+    setValue({ send })
+    const { getByLabelText, getByPlaceholderText, getByTestId } = render(<AutopilotRail />)
+    withFakeTranscriber()
+
+    // Type first, then dictate INTO that half-written question. The draft is `typed` for
+    // good, so conversation mode must stay out of it: the user is still composing, and the
+    // words they have not finished writing are not a turn.
+    fireEvent.change(getByPlaceholderText(PLACEHOLDER), { target: { value: 'restart' } })
+    fireEvent.click(getByTestId('autopilot-voice-button'))
+    await act(() => settle())
+    act(() => tick(2000))
+    fireEvent.click(getByTestId('autopilot-voice-button'))
+    await act(() => settle())
+
+    expect(send).not.toHaveBeenCalled()
+    expect((getByPlaceholderText(PLACEHOLDER) as HTMLTextAreaElement).value).toBe('restart scale payments to three replicas')
+
+    // It is still sendable by hand, and it is a TEXT turn — dictation does not launder
+    // provenance, so this answer is not spoken back.
+    fireEvent.click(getByLabelText('Send'))
+    expect(send).toHaveBeenCalledWith('restart scale payments to three replicas', { modality: 'text' })
   })
 
   it('one typed character before Send makes it a TEXT turn — dictation does not launder provenance', async () => {

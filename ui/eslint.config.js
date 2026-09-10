@@ -518,7 +518,10 @@ export default tsEslint.config(
 
   // Voice spec FR 65/68 — the STRUCTURAL form of two invariants, so neither can be broken by
   // a later edit that merely looks reasonable:
-  //   · voice INPUT can never send a turn on its own (only the human's Send press does), and
+  //   · voice code can never reach the transport ITSELF. Conversation mode does send a
+  //     spoken turn, but the send lives outside this fence: the store reports a completed
+  //     purely-dictated draft through the sink `voiceWiring` injects, and the RAIL submits.
+  //     Voice states that a turn is finished; it never holds the means to send one, and
   //   · SPEAK-BACK can never make a model call — the spoken words are a pure local transform
   //     of the text already written in the chat, never a separately generated summary.
   // A user hearing one account of what the agent found while the transcript records another
@@ -536,7 +539,7 @@ export default tsEslint.config(
         }],
         patterns: [{
           group: ['**/transport', '**/AutopilotProvider'],
-          message: 'Nothing under Autopilot/voice/ may import the A2A transport or the provider\'s send(): dictation fills the textarea and ONLY the user pressing Send submits, so audio can never reach an agent as part of a turn (voice spec FR 11/65). What the transcription call needs from outside this fence — the portal bearer, the rate-limit detector, the session resume — is INJECTED by the rail through voiceStore.installTranscribeDeps().',
+          message: 'Nothing under Autopilot/voice/ may import the A2A transport or the provider\'s send(): a spoken turn is submitted by the RAIL, outside this fence, via the sink injected through voiceStore.installConversationSink() — the voice modules report that a draft is complete and never hold the means to send one (voice spec FR 11/65). What the transcription call needs from outside this fence — the portal bearer, the rate-limit detector, the session resume — is INJECTED the same way, through voiceStore.installTranscribeDeps().',
         }],
       }],
     },
