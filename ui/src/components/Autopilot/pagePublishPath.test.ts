@@ -28,7 +28,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { BlueprintDraftHeld } from './blueprintDraftStore'
-import { pageNavFragmentPath, pageNavFragmentSlug, pagePublishFiles, pagePublishPath, PORTAL_PAGE_CHART_ROOT } from './pageDraft'
+import { PORTAL_PAGE_CHART_ROOT, heldKeyForDisplayedPath, pageNavFragmentPath, pageNavFragmentSlug, pagePublishFiles, pagePublishPath } from './pageDraft'
 import { buildPagePublishOps } from './pagePublish'
 import { buildPagePreviewPayload } from './previewBridge'
 
@@ -105,5 +105,41 @@ describe('page publish destination — the live portal chart root', () => {
     // The preview shows the widget CRs only (the nav fragment is synthesized at draft time), so it
     // must match the publish paths for exactly those files.
     expect(previewPaths().sort()).toEqual(gitWritePaths().filter((path) => path.includes('/templates/')).sort())
+  })
+})
+
+describe('the round trip back from the drawer (heldKeyForDisplayedPath)', () => {
+  /**
+   * The drawer DISPLAYS a page file at its repo destination but the draft HOLDS it under a bare
+   * identity token. Without a resolver, updateFile's `path in held.files` check refuses every page
+   * edit — silently, because a refused edit just leaves the previous bytes standing. That is why
+   * per-file editing of a page has never worked, before the dead-path fix or after it.
+   */
+  it('resolves a displayed page path back to the key the draft holds', () => {
+    const held = HELD.files
+    for (const key of Object.keys(held)) {
+      const displayed = pagePublishPath(key)
+      // It really is routed, and it really comes back.
+      expect(displayed).not.toBe(key)
+      expect(heldKeyForDisplayedPath(displayed, held)).toBe(key)
+    }
+  })
+
+  it('refuses a path that is not held, rather than inventing a key', () => {
+    const held = HELD.files
+    expect(heldKeyForDisplayedPath('helm/portal/templates/flex.page-not-mine.yaml', held)).toBeNull()
+    expect(heldKeyForDisplayedPath('', held)).toBeNull()
+  })
+
+  it('never basenames a BLUEPRINT path — two templates could share a name in different directories', () => {
+    // A blueprint's held keys ARE repo paths (it carries a Chart.yaml), so they resolve to
+    // themselves. Basenaming here would collapse chart/templates/a.yaml and chart/files/a.yaml.
+    const blueprint = {
+      'Chart.yaml': 'name: x',
+      'chart/files/service.yaml': 'b',
+      'chart/templates/service.yaml': 'a',
+    }
+    expect(heldKeyForDisplayedPath('chart/templates/service.yaml', blueprint)).toBe('chart/templates/service.yaml')
+    expect(heldKeyForDisplayedPath('service.yaml', blueprint)).toBeNull()
   })
 })

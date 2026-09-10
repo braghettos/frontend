@@ -822,7 +822,10 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
   // held draft's identity. The edited bytes then publish UNCHANGED via the $fileContent substitution —
   // published == the human-edited bytes, never retyped by the model.
   useEffect(() => onFileEdit(({ content, path }) => {
-    if (blueprintStore.updateFile(path, content).ok) { blueprintGate.recordPreview(heldDraftIdentity(blueprintStore.get())) }
+    // updateDisplayedFile, not updateFile: the drawer shows a page at its repo DESTINATION while the
+    // draft holds it under a bare token, and updateFile matches on the held key — so the raw
+    // displayed path refuses every page edit, silently (a refused edit just leaves the bytes).
+    if (blueprintStore.updateDisplayedFile(path, content).ok) { blueprintGate.recordPreview(heldDraftIdentity(blueprintStore.get())) }
   }), [blueprintGate, blueprintStore])
 
   const toggle = useCallback(() => setOpen((prev) => !prev), [])

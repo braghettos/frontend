@@ -272,10 +272,14 @@ export const PAGE_PREVIEW_CAPTION
 
 export const buildPagePreviewPayload = (widgets: Record<string, unknown>[]): AutopilotPreviewPayload => ({
   caption: PAGE_PREVIEW_CAPTION,
-  // The write-set a publish commits, at the destination the publish ACTUALLY writes — routed through
-  // the same pagePublishPath the two publish paths use. Spelling the prefix here instead is how the
-  // drawer came to promise `chart/templates/...` long after the portal repo renamed that directory
-  // away: the preview looked right, the merge looked right, and the page never appeared.
+  // The proposed widget CRs, each at the destination a publish ACTUALLY writes it to — routed
+  // through the same pagePublishPath the two publish paths use. Spelling the prefix here instead is
+  // how the drawer came to promise `chart/templates/...` long after the portal repo renamed that
+  // directory away: the preview looked right, the merge looked right, and the page never appeared.
+  //
+  // NOT the complete write-set, and the difference is worth stating: a publish also commits the
+  // generated nav fragment, which is derived at publish time from the held draft and so is not one
+  // of the `widgets` this builds from. The paths shown are exact; the LIST is the CRs only.
   files: widgets.map((widget) => ({
     content: toYamlString(widget),
     path: pagePublishPath(pageDraftSlug(String(widget.kind), String(metadataOf(widget).name ?? ''))),

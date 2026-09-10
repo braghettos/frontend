@@ -49,9 +49,13 @@ export const PORTAL_PAGE_CHART_ROOT = 'helm/portal'
 export const pageNavFragmentPath = (slug: string): string => `${PORTAL_PAGE_CHART_ROOT}/files/nav-fragments/${slug}.yaml`
 
 /**
- * The repo path for ONE held page file — the SINGLE router every writer shares (the legacy github
- * git-write set, the BuilderPublish claim, and the preview drawer's Files tab), so what the user is
- * shown and what is committed cannot drift apart again.
+ * The repo path for ONE held page file — the SINGLE router every WRITER shares (the legacy github
+ * git-write set, the BuilderPublish claim, and the preview drawer's Files tab), so the destination
+ * the user is SHOWN and the destination a publish COMMITS cannot drift apart again.
+ *
+ * It routes one way only, and that asymmetry is load-bearing: held keys are the identity the
+ * preview gate and the `$fileContent` substitution match on, so a path that comes BACK from the UI
+ * (an edited file) has to be resolved to its key first — see heldKeyForDisplayedPath.
  *
  * Held keys are bare identity tokens, not paths (the preview gate and the `$fileContent`
  * substitution match on them), so the destination is derived here instead of being baked into the
@@ -152,6 +156,32 @@ export const pageDraftFiles = (widgets: readonly unknown[], nav?: NavHint): Reco
  * discriminator the provider uses to pick the right identity function for the preview-gate.
  */
 export const isPageDraft = (files: Record<string, string>): boolean => !('Chart.yaml' in files)
+
+/**
+ * The inverse of `pagePublishPath`, for bytes coming BACK from the UI: given a path as the preview
+ * drawer DISPLAYS it, return the key that file is held under, or null if it is not a held file.
+ *
+ * The drawer shows a page file at its repo destination (`helm/portal/templates/flex.page-x.yaml`)
+ * while the draft holds it under a bare identity token (`flex.page-x.yaml`). Handing the displayed
+ * path straight to `updateFile` therefore fails its `path in held.files` check and the edit is
+ * silently refused — which is why per-file editing of a PAGE has never once worked, before this
+ * change or after it. A blueprint is unaffected and must stay that way: its held keys ARE repo
+ * paths (`chart/templates/...`), so it matches on the first branch and is never basename-d, which
+ * would collapse two templates of the same name in different directories onto each other.
+ */
+export const heldKeyForDisplayedPath = (path: string, files: Record<string, string>): string | null => {
+  if (path in files) {
+    return path
+  }
+  if (!isPageDraft(files)) {
+    return null
+  }
+  // Invert by ROUTING each held key, not by taking a basename. The nav fragment is why: it is held
+  // as `nav-fragment.<slug>.yaml` but lands as `<slug>.yaml` in a different directory, so its
+  // filename is not its key and a basename resolves it to nothing. Routing forward and comparing
+  // is exact for every shape, and stays exact if the routing rules change.
+  return Object.keys(files).find((key) => pagePublishPath(key) === path) ?? null
+}
 
 /**
  * The page's STABLE identity for the preview-gate (`page:<root-slug>`): the root page flex

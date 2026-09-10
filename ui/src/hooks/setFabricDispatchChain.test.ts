@@ -29,7 +29,7 @@ import type { FormWidgetData } from '../widgets/Form/Form'
 import { dispatchAction, type ActionContext } from './useHandleActions'
 
 // The EXACT served access-grant Widget snowplow returns for the CR at
-// krateo-portal-chart chart/templates/form.access-grant.yaml. rest[0] has
+// krateo-platformops/portal helm/portal/templates/form.access-grant.yaml. rest[0] has
 // ops:[create-role, create-rolebinding]; each op carries its own payload +
 // payloadToOverride; the top-level payloadToOverride is ABSENT (the ops carry it).
 const makeAccessGrantWidget = (): Widget => ({
