@@ -13,6 +13,8 @@
 import { Form, Input, Modal, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 
+import { ABOVE_PREVIEW_DRAWER_Z_INDEX } from '../../hooks/confirmModalProps'
+
 export interface PublishTarget {
   owner: string
   repo: string
@@ -42,8 +44,20 @@ type PendingResolve = (target: PublishTarget | null) => void
 type Handler = (req: PublishTargetRequest) => Promise<PublishTarget | null>
 
 let activeHandler: Handler | null = null
-/** The last destination the human confirmed — prefills the next ask (session-lived). */
-let lastConfirmed: PublishTarget | null = null
+/**
+ * The last destination the human confirmed, PER KIND — prefills the next ask of that same
+ * kind (session-lived).
+ *
+ * Keyed by kind, not global. A single memo made one confirmed destination prefill every
+ * later publish of every kind, so confirming a KOG mapping into krateo-oas left the next
+ * PAGE publish pointing at the KOG registry — while the preview chip beside the form still
+ * read "Publishes to krateo-portal-chart". A tester's screenshot showed exactly that pair.
+ * The artifacts live in different repos by design (blueprints in krateo-blueprints, pages
+ * in the portal chart, KOG mappings in krateo-oas), so carrying one kind's answer over to
+ * another is never the helpful default — it is a mis-publish with a plausible-looking
+ * prefill. Within a kind, repeating the last answer is genuinely useful, so that stays.
+ */
+let lastConfirmed: Partial<Record<PublishTargetRequest['kind'], PublishTarget>> = {}
 
 /** Ask the human for the publish destination. Resolves null on cancel (the publish is
  * denied). With no mounted host, resolves the prefills immediately (headless-safe). */
@@ -75,7 +89,7 @@ export const askPublishDestination = (
 /** TEST SEAM — reset the module-level state between specs. */
 export const resetPublishTargetForTests = (): void => {
   activeHandler = null
-  lastConfirmed = null
+  lastConfirmed = {}
 }
 
 export const PublishTargetFormHost = () => {
@@ -94,13 +108,13 @@ export const PublishTargetFormHost = () => {
 
   useEffect(() => {
     if (pending) {
-      form.setFieldsValue(lastConfirmed ?? { base: pending.req.base, owner: pending.req.owner, repo: pending.req.repo })
+      form.setFieldsValue(lastConfirmed[pending.req.kind] ?? { base: pending.req.base, owner: pending.req.owner, repo: pending.req.repo })
     }
   }, [pending, form])
 
   const close = (target: PublishTarget | null) => {
-    if (target) {
-      lastConfirmed = target
+    if (target && pending) {
+      lastConfirmed[pending.req.kind] = target
     }
     pending?.resolve(target)
     setPending(null)
@@ -116,6 +130,14 @@ export const PublishTargetFormHost = () => {
       }}
       open={pending !== null}
       title={`Where should this ${pending ? KIND_NOUN[pending.req.kind] : 'page'} be committed?`}
+      // ABOVE THE PREVIEW DRAWER. This form is opened BY a publish the user started from
+      // the preview, so the drawer is always up behind it. In antd 6 both surfaces default
+      // to `token.zIndexPopupBase` (1000) and the drawer pins itself there explicitly, so a
+      // tie is decided by DOM order — and the always-mounted drawer wins, clipping this
+      // form and putting "Confirm destination" somewhere the user can neither see nor
+      // click. The blast-radius confirm was raised for exactly this reason; this second
+      // gate on the same flow was missed until a tester hit it.
+      zIndex={ABOVE_PREVIEW_DRAWER_Z_INDEX}
     >
       <div data-testid='publish-target-form'>
         <Typography.Paragraph type='secondary'>

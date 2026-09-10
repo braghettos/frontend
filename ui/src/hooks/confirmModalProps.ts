@@ -26,7 +26,17 @@ import type { BlastRadius, BlastRadiusSet } from './blastRadius.types'
  * — all of which route through the one `ctx.confirm` gate. Kept below the
  * SessionResumeModal's 2000 so nothing else is displaced.
  */
-export const BLAST_RADIUS_CONFIRM_Z_INDEX = 1100
+export const ABOVE_PREVIEW_DRAWER_Z_INDEX = 1100
+
+/**
+ * The blast-radius confirm's z-index, and an alias kept because this gate is not the only
+ * one. The reasoning above is about the DRAWER, not about blast radius: ANY modal that can
+ * open while the preview is up needs to clear it. Naming the general value separately is
+ * what stops the next gate from being written at the default and inheriting this bug — as
+ * the publish-destination form (publishTargetForm.tsx) did, which was raised only after a
+ * tester photographed it trapped behind the drawer with its buttons unreachable.
+ */
+export const BLAST_RADIUS_CONFIRM_Z_INDEX = ABOVE_PREVIEW_DRAWER_Z_INDEX
 
 /**
  * Pure builder for the blast-radius confirm modal's props (the single HITL gate).
