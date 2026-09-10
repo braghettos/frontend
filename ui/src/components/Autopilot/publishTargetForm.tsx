@@ -156,7 +156,7 @@ export const PublishTargetFormHost = () => {
             <Input placeholder='krateo-blueprints' />
           </Form.Item>
           <Form.Item label='Repository' name='repo' rules={[{ message: 'the repository is required', required: true }]}>
-            <Input placeholder='krateo-portal-chart' />
+            <Input placeholder='portal' />
           </Form.Item>
           <Form.Item label='Base branch (the change-request target)' name='base' rules={[{ message: 'the base branch is required', required: true }]}>
             <Input placeholder='main' />

@@ -34,7 +34,7 @@ import { recordToolFrame } from './evidence'
 import { useAutopilotShortcut } from './keyboardShortcut'
 import { dispatchKogPublish } from './kogPublishDispatch'
 import { createOasAttachmentStore, type OasAttachmentResult } from './oasAttachment'
-import { isPageDraft, pageRootSlug } from './pageDraft'
+import { isPageDraft, pagePublishFiles, pageRootSlug } from './pageDraft'
 import { buildPagePublishOps } from './pagePublish'
 import { PREVIEW_SELF_CORRECTION_NUDGE } from './previewBus'
 import { onRestDefEdit } from './previewEditBus'
@@ -370,7 +370,13 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
         } else if (!held || !slug || !identity) {
           compiled = { denial: `denied — no previewed ${isPage ? 'portal page' : 'blueprint'} to publish (draft + preview a ${isPage ? 'page-<slug>' : 'chart'} first)`, ops: null }
         } else if (publishViaClaim) {
-          const files = Object.entries(held.files).map(([path, content]) => ({ content, path }))
+          // The claim commits each path VERBATIM (builder-publish only splits it into basename + dir),
+          // so the full repo path is this caller's job. A BLUEPRINT's held keys already ARE
+          // chart-relative paths and pass straight through; a PAGE's are bare identity tokens, and
+          // publishing those unrouted dropped every widget CR at the repo ROOT — outside the chart,
+          // packaged by nothing, merged green and rendered never. pagePublishFiles applies the same
+          // routing the legacy git-write path and the preview drawer use, so all three agree.
+          const files = isPage ? pagePublishFiles(held.files) : Object.entries(held.files).map(([path, content]) => ({ content, path }))
           if (files.length > MAX_APPLY_SET_OPS) {
             compiled = { denial: `denied — "${slug}" has ${files.length} files; a single publish tops out at ${MAX_APPLY_SET_OPS} — ${overflow}.`, ops: null }
           } else {
@@ -449,7 +455,7 @@ export const AutopilotProvider = ({ children }: { children: React.ReactNode }) =
             if (draft.ok) { blueprintGate.recordPreview(draftDisplayName(draft.held.files)) }
           } else if (proposal.verb === 'previewPage') {
             // FE-P2: an APPLIED previewPage holds its widget CRs as a page draft + arms the shared
-            // gate (recordPagePreview) — a page publish (RepoContent → krateo-portal-chart) is then
+            // gate (recordPagePreview) — a page publish (into krateo-platformops/portal) is then
             // allowed ONLY after the SAME page was previewed this thread. FE-P1's ajv verdicts
             // (drawer) + CHART-P2's PR CI are the correctness gates; this is the preview gate.
             recordPagePreview(proposal.widgets, proposal.nav, blueprintStore, blueprintGate)

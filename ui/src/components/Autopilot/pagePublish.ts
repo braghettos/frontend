@@ -18,17 +18,19 @@
  * blast-radius confirm — this module only assembles the ordered op list; it never bypasses a gate.
  *
  * FILE→PATH ROUTING is the one thing this adds over the blueprint variant: a page draft holds two
- * kinds of file — widget CRs keyed `<kind-lower>.<name>.yaml` (→ `chart/templates/<key>`) and the
- * auto-generated sidebar nav fragment keyed `nav-fragment.<slug>.yaml` (→
- * `chart/files/nav-fragments/<slug>.yaml`, globbed by menu.sidebar-nav.yaml so the /<slug> sidebar
- * entry ships WITH the page). The gitref sha is OMITTED (the git-provider auto-resolves the base
- * HEAD) — the model never has to source it.
+ * kinds of file — widget CRs keyed `<kind-lower>.<name>.yaml` and the auto-generated sidebar nav
+ * fragment keyed `nav-fragment.<slug>.yaml` (globbed by menu.sidebar-nav.yaml so the /<slug> sidebar
+ * entry ships WITH the page). Both destinations come from pagePublishPath (pageDraft.ts) — this
+ * module does NOT spell the chart root itself, because when it did, the portal repo's chart/ →
+ * helm/portal/ move left the literal here pointing at a directory that no longer existed and every
+ * publish merged green into nothing. The gitref sha is OMITTED (the git-provider auto-resolves the
+ * base HEAD) — the model never has to source it.
  */
 
 import type { ApplyResourceSetGvr, ApplyResourceSetOp } from './applyResourceSet'
 import { FILE_CONTENT_KEY, type BlueprintDraftHeld } from './blueprintDraftStore'
 import { GITHUB_KOG_GROUP, GITHUB_KOG_VERSION } from './blueprintPublish'
-import { pageNavFragmentPath, pageNavFragmentSlug } from './pageDraft'
+import { pagePublishPath } from './pageDraft'
 
 /**
  * Repo coordinates for a page publish. The model supplies these simple scalars from its prompt
@@ -68,8 +70,8 @@ const pathNameSlug = (path: string): string => path.toLowerCase().replace(/[^a-z
  *                          auto-resolves the base-branch HEAD).
  *   2. POST repocontents — one per held file, content = the `{"$fileContent": "<slug>"}` token
  *                          (compilePublishOps substitutes the previewed bytes as base64). Widget CRs
- *                          land under `chart/templates/`; the nav fragment under
- *                          `chart/files/nav-fragments/` (so the sidebar entry ships with the page).
+ *                          land under the chart's `templates/`; the nav fragment under its
+ *                          `files/nav-fragments/` (so the sidebar entry ships with the page).
  *   3. POST pullrequests — open the PR from the builder branch into `base`.
  * The branch/paths are DERIVED from the page slug so the model never has to match them. Each op's
  * payload is a FULL CR object (apiVersion + kind + metadata.name + spec) — a bare `{spec}` is
@@ -88,7 +90,6 @@ export const buildPagePublishOps = (
   const configurationRef = { name: req.configurationRef ?? PORTAL_CHART_REPO_DEFAULTS.configurationRef }
   const page = `page-${slug}`
   const branch = `builder/${page}`
-  const navKey = pageNavFragmentSlug(slug)
   const apiVersion = `${GITHUB_KOG_GROUP}/${GITHUB_KOG_VERSION}`
   const gvr = (resource: string): ApplyResourceSetGvr => ({ group: GITHUB_KOG_GROUP, resource, version: GITHUB_KOG_VERSION })
 
@@ -111,11 +112,11 @@ export const buildPagePublishOps = (
     },
   ]
 
-  // Widget CRs (kind-lower.name.yaml) → chart/templates/; the nav fragment (nav-fragment.<slug>.yaml)
-  // → chart/files/nav-fragments/<slug>.yaml. Insertion order (widgets first, nav fragment last) is
+  // pagePublishPath routes each held key to its destination inside the chart (widget CR → templates/,
+  // nav fragment → files/nav-fragments/). Insertion order (widgets first, nav fragment last) is
   // preserved by pageDraftFiles, so iterating the held keys yields widgets-then-nav deterministically.
   for (const key of Object.keys(held.files)) {
-    const path = key === navKey ? pageNavFragmentPath(slug) : `chart/templates/${key}`
+    const path = pagePublishPath(key)
     ops.push({
       gvr: gvr('repocontents'),
       namespace,

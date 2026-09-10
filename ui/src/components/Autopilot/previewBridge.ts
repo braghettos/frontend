@@ -19,7 +19,7 @@ import { getAccessToken } from '../../utils/getAccessToken'
 import type { PortalActionProposal } from './actionBridge'
 import { parseRawTemplates } from './blueprintDraft'
 import { restDefImmutabilityWarnings, validateRestDefinitionDraft } from './kogMapping'
-import { pageDraftSlug } from './pageDraft'
+import { pageDraftSlug, pagePublishPath } from './pageDraft'
 import { setPreviewProblems, type AutopilotPreviewPayload, type PreviewObjectEntry } from './previewBus'
 
 /** The chart coordinates previewBlueprint sends to the render service. */
@@ -272,11 +272,13 @@ export const PAGE_PREVIEW_CAPTION
 
 export const buildPagePreviewPayload = (widgets: Record<string, unknown>[]): AutopilotPreviewPayload => ({
   caption: PAGE_PREVIEW_CAPTION,
-  // The write-set a publish commits: each widget CR at its portal-chart destination path (the
-  // SAME chart/templates/<kind>.<name>.yaml the publishPage git-write targets — see pageDraft.ts).
+  // The write-set a publish commits, at the destination the publish ACTUALLY writes — routed through
+  // the same pagePublishPath the two publish paths use. Spelling the prefix here instead is how the
+  // drawer came to promise `chart/templates/...` long after the portal repo renamed that directory
+  // away: the preview looked right, the merge looked right, and the page never appeared.
   files: widgets.map((widget) => ({
     content: toYamlString(widget),
-    path: `chart/templates/${pageDraftSlug(String(widget.kind), String(metadataOf(widget).name ?? ''))}`,
+    path: pagePublishPath(pageDraftSlug(String(widget.kind), String(metadataOf(widget).name ?? ''))),
   })),
   objects: widgets.map((widget) => ({
     kind: String(widget.kind),
@@ -284,7 +286,7 @@ export const buildPagePreviewPayload = (widgets: Record<string, unknown>[]): Aut
     ...(typeof widget.apiVersion === 'string' && widget.apiVersion ? { apiVersion: widget.apiVersion } : {}),
     yaml: toYamlString(widget),
   })),
-  publishTarget: { base: 'main', repo: 'krateo-portal-chart' },
+  publishTarget: { base: 'main', repo: 'portal' },
   title: `Page preview — ${widgets.length} proposed widget${widgets.length === 1 ? '' : 's'}`,
 })
 

@@ -68,7 +68,7 @@ describe('nav fragment helpers (#106)', () => {
 
   it('slug + path conventions', () => {
     expect(pageNavFragmentSlug('postgres')).toBe('nav-fragment.postgres.yaml')
-    expect(pageNavFragmentPath('postgres')).toBe('chart/files/nav-fragments/postgres.yaml')
+    expect(pageNavFragmentPath('postgres')).toBe('helm/portal/files/nav-fragments/postgres.yaml')
   })
 
   it('pageNavFragment title-cases a multi-word slug for the default label', () => {
