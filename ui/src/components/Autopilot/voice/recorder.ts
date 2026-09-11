@@ -34,8 +34,33 @@ import { MIN_RECORDING_SECONDS } from './voicePrompt'
 /** Hard cap on one dictation (FR 12/27). Also what bounds the payload against the
  *  gateway's 2 MiB request buffer at the requested 32 kbit/s. */
 export const MAX_RECORDING_MS = 60_000
-/** Silence that ends a recording (FR 12) — long enough to think mid-sentence. */
-export const SILENCE_STOP_MS = 8_000
+/**
+ * Silence that ends a recording (FR 12).
+ *
+ * 8 s was right when this was DICTATION: you were composing a message into the composer and
+ * a long pause meant you were still thinking. Pressing the microphone is now a spoken TURN
+ * that sends itself, and in a conversation 8 s of dead air after you stop talking reads as
+ * the thing being broken — you have finished speaking and nothing happens.
+ *
+ * 1.2 s is the conversational endpoint: comfortably past the ~250-500 ms pauses inside a
+ * sentence, short enough that the turn goes while you are still expecting it to. It is a
+ * COMPROMISE, and worth naming as one — a client-side RMS timer cannot tell "finished" from
+ * "thinking", so a long mid-thought pause will cut you off where 8 s would not. The real fix
+ * is server-side endpointing, where the MODEL decides the turn ended; until that lands this
+ * number is the whole of the heuristic.
+ */
+export const SILENCE_STOP_MS = 1_200
+/**
+ * How long to wait for the user to START, before any speech has been heard at all.
+ *
+ * These are two different silences and collapsing them is a bug: the gap AFTER you stop
+ * talking ends your turn, but the gap BEFORE you begin is you drawing breath. Sharing one
+ * 1.2 s window means pressing the microphone and pausing to gather the thought stops the
+ * recording before the first word — the old 8 s value hid that, which is exactly why it did
+ * not show up until the window was shortened. Real server-side VAD splits the same pair
+ * (prefix padding vs end-of-speech sensitivity); this is that split, done locally.
+ */
+export const SILENCE_LEAD_IN_MS = 8_000
 /** RMS (0..1) above which the analyser considers the room to contain speech. */
 export const SPEECH_RMS_THRESHOLD = 0.02
 /** How often the level/silence/duration ticker runs. */
@@ -203,6 +228,7 @@ export const startRecording = async (
   let ticker: ReturnType<typeof setInterval> | null = null
   let peakRms = 0
   let lastLoudAt = startedAt
+  let heardSpeech = false
   let settled = false
   let discarded = false
 
@@ -307,6 +333,7 @@ export const startRecording = async (
     peakRms = Math.max(peakRms, level)
     if (level >= SPEECH_RMS_THRESHOLD) {
       lastLoudAt = now
+      heardSpeech = true
     }
     handlers.onLevel(level)
     handlers.onTick(now - startedAt)
@@ -315,7 +342,13 @@ export const startRecording = async (
       stopRecorder()
       return
     }
-    if (now - lastLoudAt >= SILENCE_STOP_MS) {
+    // Trailing silence ends the TURN, but only once there is a turn to end; before the first
+    // word the budget is the lead-in instead. Both report 'silence' — for a recording with no
+    // speech in it the transcription step returns the no-speech sentinel and nothing is
+    // appended, which is the same outcome as before and needs no new caller handling.
+    const quietFor = heardSpeech ? now - lastLoudAt : now - startedAt
+    const quietBudget = heardSpeech ? SILENCE_STOP_MS : SILENCE_LEAD_IN_MS
+    if (quietFor >= quietBudget) {
       handlers.onAutoStop('silence')
       stopRecorder()
     }
