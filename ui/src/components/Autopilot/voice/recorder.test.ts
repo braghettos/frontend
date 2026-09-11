@@ -16,6 +16,7 @@ import type { MediaRecorderLike, MediaStreamLike, RecorderDeps, RecordingResult 
 import {
   LEVEL_TICK_MS,
   MAX_RECORDING_MS,
+  SILENCE_LEAD_IN_MS,
   SILENCE_STOP_MS,
   SPEECH_RMS_THRESHOLD,
   startRecording,
@@ -172,7 +173,7 @@ describe('the heard-something gate (FR 66) — silence is never uploaded', () =>
 })
 
 describe('auto-stop (FR 12)', () => {
-  it('stops after 8 s of silence and reports it as silence, not an error', async () => {
+  it('stops after the trailing-silence window and reports it as silence, not an error', async () => {
     const bench = harness()
     const spies = handlers()
     await startRecording(bench.deps, 'audio/webm;codecs=opus', spies)
@@ -186,6 +187,38 @@ describe('auto-stop (FR 12)', () => {
 
     expect(spies.onAutoStop).toHaveBeenCalledWith('silence')
     expect(spies.onResult).toHaveBeenCalledTimes(1)
+  })
+
+  it('does NOT stop while the user is still gathering the thought — lead-in is not trailing silence', async () => {
+    // The bug this locks out: with lastLoudAt seeded to the start time and ONE window for both
+    // silences, shortening the turn-ending window to 1.2 s stopped the recording before the
+    // first word. Pressing the microphone and pausing to think must not end the turn.
+    const bench = harness()
+    const spies = handlers()
+    await startRecording(bench.deps, 'audio/webm;codecs=opus', spies)
+
+    bench.setLevel(SILENT)
+    bench.tick(SILENCE_STOP_MS * 3)
+    expect(spies.onAutoStop).not.toHaveBeenCalled()
+
+    // ...and once speech finally arrives, the SHORT window is what ends the turn.
+    bench.setLevel(LOUD)
+    bench.tick(500)
+    bench.setLevel(SILENT)
+    bench.tick(SILENCE_STOP_MS + LEVEL_TICK_MS)
+    expect(spies.onAutoStop).toHaveBeenCalledWith('silence')
+  })
+
+  it('gives up after the lead-in when the user never speaks at all', async () => {
+    const bench = harness()
+    const spies = handlers()
+    await startRecording(bench.deps, 'audio/webm;codecs=opus', spies)
+
+    bench.setLevel(SILENT)
+    bench.tick(SILENCE_LEAD_IN_MS - LEVEL_TICK_MS)
+    expect(spies.onAutoStop).not.toHaveBeenCalled()
+    bench.tick(LEVEL_TICK_MS * 2)
+    expect(spies.onAutoStop).toHaveBeenCalledWith('silence')
   })
 
   it('stops at 60 s and still transcribes what was said — it is information, not a failure', async () => {
