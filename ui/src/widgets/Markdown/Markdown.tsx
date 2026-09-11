@@ -1,7 +1,8 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from 'antd'
-import { useMemo, useState } from 'react'
+import { isValidElement, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { CopyToClipboard } from 'react-copy-to-clipboard-ts'
 import { default as ReactMarkdown } from 'react-markdown'
 
@@ -11,6 +12,74 @@ import styles from './Markdown.module.css'
 import type { Markdown as WidgetType } from './Markdown.type'
 
 export type MarkdownWidgetData = WidgetType['spec']['widgetData']
+
+// The text a fenced code block actually contains. react-markdown hands `pre` a React tree (a <code>
+// element whose children are strings, sometimes split across nodes by the highlighter), so the raw
+// source is not available as a prop and has to be walked out of the children.
+const textFromNode = (node: ReactNode): string => {
+  if (node === null || node === undefined || typeof node === 'boolean') { return '' }
+  if (typeof node === 'string' || typeof node === 'number') { return String(node) }
+  if (Array.isArray(node)) { return node.map(textFromNode).join('') }
+  if (isValidElement(node)) { return textFromNode((node.props as { children?: ReactNode }).children) }
+  return ''
+}
+
+// A fenced code block with its OWN copy button.
+//
+// WHY THIS EXISTS. `allowCopy` puts one button at the top of the whole widget and copies the entire
+// markdown — every heading, every sentence, every code block at once. On a remediation step that
+// produced something no one can use: the copied text was the prose, the JSON payload AND two shell
+// commands, so it could not be pasted into a terminal, which is the only reason anyone pressed it
+// (reported on /incidents/krateo-system/report-provenance-test). A command is the thing people copy,
+// so the button belongs on the command.
+//
+// Every markdown in the portal gets this, not just remediation steps — agent prompts, the gateway
+// registration steps, the seven-hop walk all carry commands and manifests in fenced blocks.
+const CodeBlock = ({ children }: { children?: ReactNode }) => {
+  const [isCopied, setIsCopied] = useState(false)
+  const text = useMemo(() => textFromNode(children), [children])
+
+  return (
+    <div className={styles.codeBlock}>
+      <pre
+        style={{
+          background: 'rgba(127,127,127,0.12)',
+          border: '1px solid var(--border-color)',
+          borderLeft: '3px solid var(--primary-color)',
+          borderRadius: '4px',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '13px',
+          margin: '8px 0',
+          overflowWrap: 'anywhere',
+          // Room for the button so a long command never runs underneath it.
+          paddingRight: '44px',
+          whiteSpace: 'pre-wrap',
+        }}
+      >
+        {children}
+      </pre>
+
+      {/* Only when there is something to copy: an empty fence gets no button rather than a dead one. */}
+      {text.trim() !== '' && (
+        <CopyToClipboard
+          onCopy={() => {
+            setIsCopied(true)
+            setTimeout(() => setIsCopied(false), 2500)
+          }}
+          text={text}
+        >
+          <Button
+            aria-label={isCopied ? 'Copied to clipboard' : 'Copy this block'}
+            className={styles.codeBlockCopy}
+            icon={<FontAwesomeIcon icon={['fas', isCopied ? 'check' : 'copy'] as IconProp} />}
+            size='small'
+            title={isCopied ? 'Copied to clipboard' : 'Copy this block'}
+          />
+        </CopyToClipboard>
+      )}
+    </div>
+  )
+}
 
 const Markdown = ({ uid, widgetData }: WidgetProps<MarkdownWidgetData>) => {
   const { allowCopy, allowDownload, downloadFileExtension = 'txt', markdown } = widgetData
@@ -87,29 +156,13 @@ const Markdown = ({ uid, widgetData }: WidgetProps<MarkdownWidgetData>) => {
             }
             return <a href={href} rel='noopener noreferrer' target='_blank'>{children}</a>
           },
-          pre: ({ children }) => (
-            // Fenced code blocks WRAP instead of scrolling horizontally: in the narrow content
-            // column (and the docked Autopilot rail) a JSON payload or a shell command on one long
-            // line would hide behind a horizontal scrollbar. `pre-wrap` keeps the authored newlines
-            // + indentation but soft-wraps long lines; `overflowWrap: anywhere` breaks a single
-            // unbreakable token (a long ref/URL) so nothing ever needs a scrollbar to be read.
-            <pre
-              style={{
-                background: 'rgba(127,127,127,0.12)',
-                border: '1px solid var(--border-color)',
-                borderLeft: '3px solid var(--primary-color)',
-                borderRadius: '4px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '13px',
-                margin: '8px 0',
-                overflowWrap: 'anywhere',
-                padding: '8px 16px',
-                whiteSpace: 'pre-wrap',
-              }}
-            >
-              {children}
-            </pre>
-          ),
+          // Fenced code blocks WRAP instead of scrolling horizontally: in the narrow content
+          // column (and the docked Autopilot rail) a JSON payload or a shell command on one long
+          // line would hide behind a horizontal scrollbar. `pre-wrap` keeps the authored newlines
+          // + indentation but soft-wraps long lines; `overflowWrap: anywhere` breaks a single
+          // unbreakable token (a long ref/URL) so nothing ever needs a scrollbar to be read.
+          // CodeBlock adds the per-block copy button — see its own note.
+          pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
         }}
         key={uid}
       >
