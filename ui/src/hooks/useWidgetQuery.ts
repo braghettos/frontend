@@ -25,10 +25,39 @@ function parseNumberParam(param: string | null) {
 /** Error carrying the HTTP status so retry logic can tell transient from permanent failures. */
 export class WidgetFetchError extends Error {
   status?: number
-  constructor(message: string, status?: number) {
+  /** The backend's OWN explanation, when the failure response carried one. */
+  detail?: string
+  constructor(message: string, status?: number, detail?: string) {
     super(message)
     this.name = 'WidgetFetchError'
     this.status = status
+    this.detail = detail
+  }
+}
+
+/**
+ * Best-effort read of a failure response's body for the backend's own message.
+ *
+ * Previously only `res.status` + `res.statusText` reached the UI — a generic HTTP phrase like
+ * "Forbidden" — and the body was dropped on the floor, so whatever snowplow said about WHY was
+ * never seen by anyone. The body is read once here (the response is being discarded anyway) and
+ * the message hoisted onto the error.
+ *
+ * Deliberately total: a non-JSON body, an empty body, or a body that cannot be read must never
+ * turn a failed fetch into a DIFFERENT failure — we are already on the error path.
+ */
+const readErrorDetail = async (res: Response): Promise<string | undefined> => {
+  try {
+    const text = await res.text()
+    if (!text) { return undefined }
+    try {
+      const parsed = JSON.parse(text) as Record<string, unknown>
+      const message = parsed.message ?? parsed.error ?? parsed.reason
+      if (typeof message === 'string' && message) { return message.slice(0, 300) }
+    } catch { /* not JSON — fall through to the raw text */ }
+    return text.slice(0, 300)
+  } catch {
+    return undefined
   }
 }
 
@@ -201,7 +230,8 @@ export const useWidgetQuery = (widgetEndpoint: string, options: UseWidgetQueryOp
       void raiseSessionExpired()
     }
     if (!res.ok) {
-      throw new WidgetFetchError(`Widget fetch failed: ${res.status} ${res.statusText}`, res.status)
+      const detail = await readErrorDetail(res)
+      throw new WidgetFetchError(`Widget fetch failed: ${res.status} ${res.statusText}`, res.status, detail)
     }
 
     // Capture the live-refresh coordination headers from THIS response (so coords +

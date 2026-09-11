@@ -50,6 +50,40 @@ export const WidgetTimeout = ({ onRetry, subtitle }: { onRetry?: () => void; sub
 )
 
 /**
+ * Distinct, CALM permission state — the server answered, and the answer was "no".
+ *
+ * A 403 is not a malfunction: the platform scopes reads per user by design, so "you may not see
+ * this" is a legitimate, expected outcome that a red error cross actively misdescribes. Before
+ * this, every non-401 failure collapsed into `WidgetError` and a denial was indistinguishable
+ * from a 500 except by an HTTP status buried in a free-text sentence.
+ *
+ * No Retry: retrying a denial changes nothing, and offering it implies the failure is transient.
+ */
+export const WidgetForbidden = ({ subtitle }: { subtitle?: string }) => (
+  <div className={styles.timeout} data-testid='widget-forbidden'>
+    <Result
+      status='info'
+      subTitle={subtitle ?? 'Your account does not have permission to read this. Ask an administrator if you need access.'}
+      title='Not available to you'
+    />
+  </div>
+)
+
+/**
+ * Distinct NOT-FOUND state. The server answered and the object is not there — a deleted
+ * composition, a stale link, a renamed resource. Also not a malfunction, and also not retryable.
+ */
+export const WidgetNotFound = ({ subtitle }: { subtitle?: string }) => (
+  <div className={styles.timeout} data-testid='widget-notfound'>
+    <Result
+      status='info'
+      subTitle={subtitle ?? 'This resource no longer exists, or it was never here.'}
+      title='Not found'
+    />
+  </div>
+)
+
+/**
  * Classify a fetch failure as a TIMEOUT (calm, retryable) vs a hard error. True for
  * request deadlines, cancelled/aborted fetches, and 503/504 gateway timeouts —
  * detected from the HTTP status when present, otherwise from the message class. Pure

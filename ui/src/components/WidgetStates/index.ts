@@ -1,1 +1,1 @@
-export { isTimeoutError, WidgetEmpty, WidgetError, WidgetLoading, WidgetTimeout } from './WidgetStates'
+export { isTimeoutError, WidgetEmpty, WidgetError, WidgetForbidden, WidgetLoading, WidgetNotFound, WidgetTimeout } from './WidgetStates'

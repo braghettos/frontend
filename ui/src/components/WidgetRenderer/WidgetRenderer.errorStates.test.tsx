@@ -185,7 +185,14 @@ describe('WidgetRenderer — hard error → WidgetError (red cross), not the cal
    * HARD ERROR path: `timedOut=false` with a genuine error (403, 500, malformed data).
    * WidgetRenderer must show the `WidgetError` red cross, NOT the calm timeout state.
    */
-  it('renders WidgetError for a 403 Forbidden — NOT WidgetTimeout', async () => {
+  /**
+   * 403 is NOT a hard error. This test previously asserted the red cross for it, which was the
+   * behaviour being fixed: the platform scopes reads per user by design, so a denial is an
+   * expected outcome and collapsing it into the same state as a 500 told the reader nothing.
+   * The original intent — "must not be mistaken for the calm timeout" — is preserved, and now
+   * the stronger claim holds too: it is its own state, distinct from BOTH.
+   */
+  it('renders WidgetForbidden for a 403 — not the red cross, not the timeout', async () => {
     await setState({
       error: Object.assign(new Error('Widget fetch failed: 403 Forbidden'), { status: 403 }),
       isPending: false,
@@ -193,10 +200,37 @@ describe('WidgetRenderer — hard error → WidgetError (red cross), not the cal
     })
     const { queryByTestId } = renderWidget()
 
-    // Hard error must appear…
-    expect(queryByTestId('widget-error')).not.toBeNull()
-    // …and the calm timeout state must NOT appear.
+    expect(queryByTestId('widget-forbidden')).not.toBeNull()
+    expect(queryByTestId('widget-error')).toBeNull()
     expect(queryByTestId('widget-timeout')).toBeNull()
+  })
+
+  it('renders WidgetNotFound for a 404 — a missing object is not a malfunction', async () => {
+    await setState({
+      error: Object.assign(new Error('Widget fetch failed: 404 Not Found'), { status: 404 }),
+      isPending: false,
+      timedOut: false,
+    })
+    const { queryByTestId } = renderWidget()
+
+    expect(queryByTestId('widget-notfound')).not.toBeNull()
+    expect(queryByTestId('widget-error')).toBeNull()
+  })
+
+  it("surfaces the backend's own message when the failure response carried one", async () => {
+    await setState({
+      error: Object.assign(new Error('Widget fetch failed: 500 Internal Server Error'), {
+        detail: 'restaction compositions-list: jq: error: null has no keys',
+        status: 500,
+      }),
+      isPending: false,
+      timedOut: false,
+    })
+    const { queryByText } = renderWidget()
+
+    // Previously only `res.statusText` reached the UI — a generic "Internal Server Error" — and
+    // the response body was discarded, so the actual cause was never visible to anyone.
+    expect(queryByText(/jq: error: null has no keys/)).not.toBeNull()
   })
 
   it('renders WidgetError for a 500 Internal Server Error — NOT WidgetTimeout', async () => {
