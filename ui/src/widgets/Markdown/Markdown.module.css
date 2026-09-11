@@ -54,3 +54,33 @@
   font-size: var(--font-size-xxs);
   padding: 0;
 }
+
+/* A fenced code block and its copy button. The wrapper is the positioning context; the button sits
+   inside the block's top-right, which is why the <pre> carries extra right padding. */
+.codeBlock {
+  position: relative;
+}
+
+.codeBlock .codeBlockCopy {
+  opacity: 0;
+  position: absolute;
+  right: 6px;
+  top: 14px;
+  transition: opacity 120ms ease-in-out;
+}
+
+/* Revealed on hover or keyboard focus. Hidden at rest because a remediation step can carry three
+   blocks, and three always-on buttons compete with the content they belong to — but never hidden
+   from the keyboard: :focus-within keeps it reachable by Tab, and it stays in the DOM (opacity, not
+   display) so screen readers announce it either way. */
+.codeBlock:hover .codeBlockCopy,
+.codeBlock:focus-within .codeBlockCopy {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  /* No hover on touch: the button is always visible rather than unreachable. */
+  .codeBlock .codeBlockCopy {
+    opacity: 1;
+  }
+}
