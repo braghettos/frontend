@@ -252,6 +252,13 @@ config:
   # vendor, and also why that reading sounds the way it does and why speak-back is unavailable
   # outright on a machine with no local voice.
   #
+  # PREREQUISITE, and it fails in a way that reads like a bug: the Cloud Text-to-Speech API must
+  # be ENABLED on the GCP project the gateway authenticates to. Verified 2026-09-11 on
+  # operations-dev-krateo-io: only aiplatform.googleapis.com is enabled, so every synthesize
+  # would return 403 "Cloud Text-to-Speech API has not been used in project ... or it is
+  # disabled" — through the gateway that surfaces as a failed route, not as a missing API.
+  #   gcloud services enable texttospeech.googleapis.com --project=<project>
+  #
   # Set it to the portal-origin /tts/v1 route (agentgateway-policies tts.enabled) to use Google
   # Cloud Text-to-Speech instead. The browser calls it with its OWN portal bearer and never
   # holds a Google credential — the gateway backend mints that. Cloud TTS is a RENDERER: it

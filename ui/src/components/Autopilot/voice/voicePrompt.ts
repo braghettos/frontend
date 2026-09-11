@@ -123,9 +123,15 @@ export const maxTokensForSeconds = (seconds: number): number =>
 /**
  * FR 61 — THE FLOOR, and why it is 8 and not 32.
  *
- * Google documents Gemini audio at 32 tokens/second. The live V1 run does not bear that
- * out: ≈3.9 s of 16 kHz mono WAV contributed 111 − 19 = 92 prompt tokens, about 24
- * tokens/second. A literal `32 × seconds` test would have REJECTED the only real
+ * Google documented Gemini audio at 32 tokens/second when this was written, and the live V1
+ * run did not bear that out: ≈3.9 s of 16 kHz mono WAV contributed 111 − 19 = 92 prompt
+ * tokens, about 24 tokens/second. GOOGLE HAS SINCE CORRECTED THE DOCUMENTED RATE TO 25 — it
+ * now says so on both the Vertex and the TTS pricing pages — and a re-measurement on
+ * 2026-09-11 against Vertex `global` agrees to three significant figures: 189 tokens / 7.56 s
+ * = 25.0, and 90 / 3.57 = 25.2, on two models and two clips. So the original measurement was
+ * right and the doc it argued with has moved to meet it. The floor of 8 is unchanged and its
+ * headroom is now ~3x rather than ~4x, which is still the right side of the only question it
+ * has to answer. A literal `32 × seconds` test would have REJECTED the only real
  * transcription in evidence, which is a false-rejection bug shipped in the name of
  * safety. The gate does not need to be tight — it only ever has to tell ~24 from ZERO —
  * so the floor sits at 8, keeping 3× headroom against the measured rate while still
