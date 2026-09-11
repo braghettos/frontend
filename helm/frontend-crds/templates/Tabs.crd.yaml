@@ -160,16 +160,17 @@ spec:
                         enum:
                           - alerts
                           - barcharts
-                          - buttons
                           - buttongroups
+                          - buttons
+                          - cards
                           - cols
-                          - listies
+                          - dividers
                           - filters
                           - flowcharts
                           - forms
                           - linecharts
+                          - listies
                           - markdowns
-                          - cards
                           - paragraphs
                           - piecharts
                           - rangepickers

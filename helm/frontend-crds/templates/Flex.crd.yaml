@@ -168,10 +168,11 @@ spec:
                       items:
                         enum:
                           - barcharts
-                          - buttons
                           - buttongroups
+                          - buttons
                           - cards
                           - cols
+                          - dividers
                           - filters
                           - flexes
                           - flowcharts
