@@ -42,7 +42,11 @@ export const color = {
   // #FFAA00, which are 3:1 non-text). Dark mode keeps the bright bases (they pass on the void).
   error: '#B92F2F',
   errorSoft: '#FEECEC',
-  faint: '#7A7A7A',
+  // AA-pinned. Was #7A7A7A in BOTH modes — the one greyscale key that did not shift with the
+  // theme — which measured 3.94-4.29:1 on the surfaces it is used on and FAILED WCAG AA for
+  // normal-size text (it is used at 12-14px in CommandPalette). Now per-mode and >= 4.68:1 on
+  // every surface, while staying subordinate to `gray`. Pinned by tokens.contrast.test.ts.
+  faint: '#6E6E6E',
   gray: '#5C5C5C',
   green: '#00744E',
   info: '#05629A',
@@ -90,7 +94,7 @@ export const colorDark: Record<keyof typeof color, string> = {
   darkBlue: '#05629A',
   error: '#F84C4C',
   errorSoft: '#401010',
-  faint: '#7A7A7A',
+  faint: '#8A8A8A',
   gray: '#A0A0A0',
   green: '#00D690',
   info: '#2FBFE6',
@@ -234,7 +238,7 @@ const KRATEO_SEMANTIC_DARK: Record<string, string> = {
   'color-border-focus': '#2FBFE6',
   'color-text-default': '#FFFFFF',
   'color-text-secondary': '#A0A0A0',
-  'color-text-muted': '#7A7A7A',
+  'color-text-muted': '#6E6E6E',
   'color-text-inverse': '#141414',
   'color-text-link': '#5CCDEB',
   'color-text-link-hover': '#8FDDF2',
@@ -274,7 +278,7 @@ const KRATEO_SEMANTIC_LIGHT: Record<string, string> = {
   'color-border-focus': '#05629A',
   'color-text-default': '#141414',
   'color-text-secondary': '#5C5C5C',
-  'color-text-muted': '#7A7A7A',
+  'color-text-muted': '#8A8A8A',
   'color-text-inverse': '#FFFFFF',
   'color-text-link': '#0A7194',
   'color-text-link-hover': '#05629A',

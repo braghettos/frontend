@@ -76,3 +76,47 @@ describe('Primary CTA button — WCAG AA contrast (Brand v2 blue)', () => {
     expect(relativeLuminance(colorDark.primary)).toBeGreaterThan(relativeLuminance(color.primary))
   })
 })
+
+/**
+ * Body-text contrast, table-driven over EVERY text-role × surface pair in both modes.
+ *
+ * The suite above pins exactly one pairing (the primary CTA). That left the rest unguarded, and
+ * one was failing in production: `faint` shipped as #7A7A7A in BOTH modes — the only greyscale key
+ * that did not shift with the theme — measuring 3.94-4.29:1 on the surfaces it is rendered on, at
+ * the 12-14px sizes CommandPalette uses it at. Below the 4.5:1 AA floor for normal-size text.
+ *
+ * Driving the assertion from the palettes themselves means a new text role or a new surface is
+ * covered the moment it is added, rather than the moment someone remembers to add a test.
+ */
+describe('Body text — WCAG AA contrast across every text/surface pair', () => {
+  const TEXT_ROLES = ['text', 'gray', 'faint'] as const
+  const SURFACES = ['light', 'panelbg', 'background', 'lightgray'] as const
+
+  const modes = [
+    { name: 'light', palette: color },
+    { name: 'dark', palette: colorDark },
+  ] as const
+
+  modes.forEach(({ name, palette }) => {
+    TEXT_ROLES.forEach((role) => {
+      SURFACES.forEach((surface) => {
+        it(`${name}: ${role} on ${surface} passes AA >= 4.5:1`, () => {
+          const ratio = contrastRatio(palette[role], palette[surface])
+          expect(ratio).toBeGreaterThanOrEqual(4.5)
+        })
+      })
+    })
+  })
+
+  it('faint differs per mode — a single value cannot clear both grounds', () => {
+    expect(colorDark.faint).not.toBe(color.faint)
+  })
+
+  it('faint stays subordinate to gray in both modes', () => {
+    // Hierarchy, not just legibility: raising faint to pass AA must not collapse it into `gray`.
+    expect(contrastRatio(color.faint, color.background))
+      .toBeLessThan(contrastRatio(color.gray, color.background))
+    expect(contrastRatio(colorDark.faint, colorDark.background))
+      .toBeLessThan(contrastRatio(colorDark.gray, colorDark.background))
+  })
+})
