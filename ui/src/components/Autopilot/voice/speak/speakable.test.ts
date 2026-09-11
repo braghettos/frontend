@@ -38,16 +38,17 @@ const RCA = [
 describe('speakableFromMarkdown — the §3.4 table', () => {
   const spoken = speakableFromMarkdown(RCA)
 
-  it('never recites a code block; it names it', () => {
-    expect(spoken).toContain('Code block, 4 lines of yaml, shown in the chat.')
+  it('never recites a code block, and no longer announces one either', () => {
+    expect(spoken).not.toContain('Code block')
+    expect(spoken).not.toContain('shown in the chat')
     for (const line of ['apiVersion', 'apps/v1', 'kind: Deployment', 'replicas']) {
       expect(spoken).not.toContain(line)
     }
   })
 
-  it('names a table instead of linearising it', () => {
-    expect(spoken).toContain('Table with 3 rows, shown in the chat.')
+  it('skips a table silently instead of linearising OR naming it', () => {
     expect(spoken).not.toContain('| Deployment |')
+    expect(spoken).not.toContain('Table with')
   })
 
   it('keeps headings, prose and resource names verbatim, and reads inline code as words', () => {
@@ -125,8 +126,12 @@ describe('speakableFromMarkdown — the remaining constructs', () => {
     expect(speakableFromMarkdown('all good 🎉 now')).toBe('all good now.')
   })
 
-  it('names an unlabelled fence without guessing a language', () => {
-    expect(speakableFromMarkdown('```\none\ntwo\n```')).toBe('Code block, 2 lines, shown in the chat.')
+  it('says nothing at all for a message that is only a fence', () => {
+    expect(speakableFromMarkdown('```\none\ntwo\n```')).toBe('')
+  })
+
+  it('speaks the prose around a fence, and only the prose', () => {
+    expect(speakableFromMarkdown('Scaled it.\n\n```yaml\nreplicas: 3\n```\n\nDone.')).toBe('Scaled it. Done.')
   })
 
   it('applies the declared pronunciation map to whole tokens only', () => {
@@ -163,15 +168,17 @@ describe('the FR 72 cap', () => {
   })
 })
 
-describe('the FR 71 action sentence — the one permitted addition', () => {
-  it('names the chip\'s own label, because the action is not in message.text', () => {
-    expect(actionSentence([{ label: 'alb-ingress-prod · 1 / 3 resources Ready', readOnly: true, verb: 'navigate' }]))
-      .toBe('This answer proposes an action: alb-ingress-prod · 1 / 3 resources Ready. Confirm it in the chat.')
+describe('FR 71 reversed — the action sentence is not spoken', () => {
+  // It used to read "This answer proposes an action: X. Confirm it in the chat." on every reply
+  // carrying a chip — the single largest source of speech nobody asked for. The honesty concern it
+  // served is carried by the chip itself, which renders in the chat and is the only thing that can
+  // apply anything; speech was never the confirmation surface.
+  it('adds nothing for a navigate chip', () => {
+    expect(actionSentence([{ label: 'alb-ingress-prod · 1 / 3 resources Ready', readOnly: true, verb: 'navigate' }])).toBe('')
   })
 
-  it('says an approval chip is awaiting approval', () => {
-    expect(actionSentence([{ label: 'approved k8s_apply_manifest', readOnly: false, verb: 'approval' }]))
-      .toContain('awaiting your approval')
+  it('adds nothing for an approval chip either — no exception for the scarier verb', () => {
+    expect(actionSentence([{ label: 'approved k8s_apply_manifest', readOnly: false, verb: 'approval' }])).toBe('')
   })
 
   it('adds nothing when the answer proposes nothing', () => {
@@ -179,16 +186,24 @@ describe('the FR 71 action sentence — the one permitted addition', () => {
     expect(actionSentence([])).toBe('')
   })
 
-  it('survives the cap — it is exactly the sentence the cap must not eat', () => {
+  it('leaves the spoken text a strict subset of the written text', () => {
+    const spoken = speakableForMessage({
+      actions: [{ label: 'scale payments to 3', readOnly: false, verb: 'runAction' }],
+      text: 'I can scale it for you.',
+    })
+    expect(spoken).toBe('I can scale it for you.')
+    expect(spoken).not.toContain('scale payments to 3')
+  })
+
+  it('still tells a listener when the ANSWER was cut — comprehension, not narration', () => {
     const spoken = speakableForMessage({
       actions: [{ label: 'scale payments to 3', readOnly: false, verb: 'runAction' }],
       text: 'Long answer. '.repeat(400),
     })
     expect(spoken).toContain(SPEAK_TRUNCATION_TAIL)
-    expect(spoken.endsWith('This answer proposes an action: scale payments to 3. Confirm it in the chat.')).toBe(true)
+    expect(spoken).not.toContain('proposes an action')
   })
 })
-
 describe('the FR 74 utterance chunking', () => {
   it('splits at sentence boundaries under the cap', () => {
     const chunks = chunkForUtterances('One. Two. Three.', 12)
