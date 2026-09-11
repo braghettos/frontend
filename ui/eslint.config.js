@@ -538,7 +538,7 @@ export default tsEslint.config(
           name: 'antd',
         }],
         patterns: [{
-          group: ['**/transport', '**/AutopilotProvider'],
+          group: ['**/transport*', '**/AutopilotProvider*'],
           message: 'Nothing under Autopilot/voice/ may import the A2A transport or the provider\'s send(): a spoken turn is submitted by the RAIL, outside this fence, via the sink injected through voiceStore.installConversationSink() — the voice modules report that a draft is complete and never hold the means to send one (voice spec FR 11/65). What the transcription call needs from outside this fence — the portal bearer, the rate-limit detector, the session resume — is INJECTED the same way, through voiceStore.installTranscribeDeps().',
         }],
       }],
@@ -551,6 +551,19 @@ export default tsEslint.config(
   // generated summary — so a model call on that path must not compile. The dictation half
   // one level up DOES import `transcribe.ts`; that is its whole job, and fencing it there
   // would ban the feature rather than the failure mode.
+  //
+  // Every pattern ends in `*` deliberately: tsconfig sets `allowImportingTsExtensions`, so
+  // `'../speakTts.ts'` compiles and Vite resolves it, and an extensionless-only group would
+  // let that spelling walk straight through the fence. A fence with one accepted spelling is
+  // not a fence.
+  //
+  // `speakTts` — the Cloud TTS client — is banned here for the same reason and is WHY it
+  // lives one level up, in `voice/speakTts.ts`, rather than beside the store it serves. It
+  // is a network call, and this directory makes NO network calls of any kind: that is what
+  // reduces FR 68 from a promise to a fact a reader can check by grep. The TTS speaker
+  // reaches the store the only way anything crosses this fence — INJECTED, as a `Speaker`,
+  // by voiceWiring.ts through speakBackStore.installSpeaker(). Moving the file in here to
+  // save an import would quietly re-open the path this rule exists to close.
   {
     files: ['src/components/Autopilot/voice/speak/**/*.{ts,tsx}'],
     name: 'Speak-back cannot call a model (voice spec FR 68)',
@@ -562,8 +575,8 @@ export default tsEslint.config(
           name: 'antd',
         }],
         patterns: [{
-          group: ['**/transport', '**/AutopilotProvider', '**/transcribe'],
-          message: 'Nothing under Autopilot/voice/speak/ may import the A2A transport, the provider\'s send(), or the transcription client: the spoken answer is a pure local transform of the exact words already written in the chat, never a second model call (voice spec FR 65/68).',
+          group: ['**/transport*', '**/AutopilotProvider*', '**/transcribe*', '**/speakTts*'],
+          message: 'Nothing under Autopilot/voice/speak/ may import the A2A transport, the provider\'s send(), the transcription client, or the Cloud TTS client: the spoken answer is a pure local transform of the exact words already written in the chat, never a second model call, and this directory makes no network calls at all (voice spec FR 65/68). The TTS speaker is INJECTED from voiceWiring.ts via speakBackStore.installSpeaker().',
         }],
       }],
     },

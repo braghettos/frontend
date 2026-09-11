@@ -18,6 +18,11 @@
  * silent fallback to a vendor. The privacy argument that ruled browser speech OUT for
  * dictation (Chrome uploads microphone audio) is the argument that rules it IN here.
  *
+ * The pin's cost — the local voices sound worst, and a machine without one is silent — is
+ * paid off by `../speakTts.ts`, NOT by relaxing the pin: an install that configures
+ * `AUTOPILOT_VOICE_TTS_URL` replaces this whole speaker with Cloud TTS behind the portal's
+ * own gateway, and one that does not keeps exactly the behaviour described above.
+ *
  * WHY IT IS INJECTABLE. jsdom has no `speechSynthesis` at all, so a real unit test has
  * nothing to drive. `SpeechDeps` is the whole surface this module needs — a synthesis
  * object and an utterance factory — and `browserSpeechDeps()` is the one place the real
@@ -124,10 +129,17 @@ export interface SpeakerHandlers {
   onRefused: () => void
 }
 
+/**
+ * THE SEAM SPEAK-BACK IS SWAPPED AT. `createSpeaker` below is one implementation; the Cloud
+ * TTS client in `../speakTts.ts` is the other, injected through
+ * `speakBackStore.installSpeaker()`. Both are handed the exact same
+ * `speakableForMessage()` string, which is what keeps FR 68 true across the swap.
+ */
 export interface Speaker {
   /** Stop immediately and drop the rest of the queue. Safe to call when idle. */
   cancel: () => void
-  /** Speak `text` in `language`. Returns false when no local voice could be chosen. */
+  /** Speak `text` in `language`. Returns false when nothing will be spoken and NO handler
+   *  will fire — for this implementation, when no local voice could be chosen. */
   speak: (text: string, language: string, handlers: SpeakerHandlers) => boolean
 }
 
