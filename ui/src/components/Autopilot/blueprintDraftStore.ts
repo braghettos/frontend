@@ -26,6 +26,7 @@
 
 import type { ApplyResourceSetOp } from './applyResourceSet'
 import { OAS_ATTACHMENT_MAX_BYTES, utf8ByteLength } from './oasAttachment'
+import { heldKeyForDisplayedPath } from './pageDraft'
 
 /** The substitution-token key. In an op payload the token is EXACTLY `{"$fileContent": "<path>"}`. */
 export const FILE_CONTENT_KEY = '$fileContent'
@@ -97,11 +98,18 @@ export interface BlueprintDraftStore {
    * TOTAL tree over the 512 KiB cap. Returns the re-measured total byte size on success.
    */
   updateFile: (path: string, content: string) => FileUpdateResult
+  /**
+   * `updateFile` for bytes coming back from the preview drawer, which shows a file at its REPO
+   * DESTINATION rather than under the key the draft holds it by. Resolving here rather than in the
+   * caller is what keeps a page edit from being refused silently: `updateFile` matches on the held
+   * key, and for a page that key is a bare identity token, never the routed path the user saw.
+   */
+  updateDisplayedFile: (displayedPath: string, content: string) => FileUpdateResult
 }
 
 export const createBlueprintDraftStore = (): BlueprintDraftStore => {
   let held: BlueprintDraftHeld | null = null
-  return {
+  const store: BlueprintDraftStore = {
     clear: () => {
       held = null
     },
@@ -112,6 +120,10 @@ export const createBlueprintDraftStore = (): BlueprintDraftStore => {
         held = result.held
       }
       return result
+    },
+    updateDisplayedFile: (displayedPath, content) => {
+      const key = held ? heldKeyForDisplayedPath(displayedPath, held.files) : null
+      return store.updateFile(key ?? displayedPath, content)
     },
     updateFile: (path, content) => {
       if (!held) {
@@ -131,6 +143,7 @@ export const createBlueprintDraftStore = (): BlueprintDraftStore => {
       return { bytes, ok: true }
     },
   }
+  return store
 }
 
 /**

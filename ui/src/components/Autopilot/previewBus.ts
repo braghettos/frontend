@@ -44,14 +44,14 @@ export interface AutopilotPreviewPayload {
    * production page. Absent = the classic source-only drawer. */
   liveEndpoint?: string
   /** The SOURCE tree that a publish commits, each file with its repo-relative destination path —
-   * the unified "Files" tab shared by BOTH builders (a page's widget CRs at chart/templates/… , a
-   * blueprint's chart tree). Both are the same shape: a manifest tree → PR to a git repo, so both
+   * the unified "Files" tab shared by BOTH builders (a page's widget CRs under the portal chart's
+   * templates/, a blueprint's chart tree). Both are the same shape: a manifest tree → PR to a git repo, so both
    * surface it identically (and it IS the write-set the blast-radius later confirms). */
   files?: { content: string; path: string }[]
   /** Label for the files tab. A blueprint names it "Chart files" — the tree IS a Helm chart and
    * the tab is where the user sees that; a page keeps the generic "Files". */
   filesLabel?: string
-  /** Where a publish writes — a one-line header on the drawer. Page → krateo-portal-chart, blueprint
+  /** Where a publish writes — a one-line header on the drawer. Page → the portal chart repo, blueprint
    * → krateo-blueprints; both open a PR into `base`. `note` qualifies WHAT ships after the merge
    * (a blueprint: a versioned OCI Helm chart). Absent for non-publishable previews (restdef). */
   publishTarget?: { base?: string; note?: string; repo: string }

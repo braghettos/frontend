@@ -53,12 +53,12 @@ describe('buildPagePublishOps', () => {
     expect(spec.configurationRef).toEqual({ name: PORTAL_CHART_REPO_DEFAULTS.configurationRef })
   })
 
-  it('routes widget CRs to chart/templates and the nav fragment to chart/files/nav-fragments', () => {
+  it('routes widget CRs to the chart templates dir and the nav fragment to its files/nav-fragments', () => {
     const specs = buildPagePublishOps({}, TREE, SLUG).filter((op) => op.gvr.resource === 'repocontents').map(specOf)
     expect(specs.map((spec) => spec.path).sort()).toEqual([
-      'chart/files/nav-fragments/cost-report.yaml',
-      'chart/templates/card.cost-summary.yaml',
-      'chart/templates/flex.page-cost-report.yaml',
+      'helm/portal/files/nav-fragments/cost-report.yaml',
+      'helm/portal/templates/card.cost-summary.yaml',
+      'helm/portal/templates/flex.page-cost-report.yaml',
     ])
     for (const spec of specs) {
       expect(spec.branch).toBe('builder/page-cost-report')
@@ -110,6 +110,6 @@ describe('buildPagePublishOps', () => {
   it('a single-widget page (no nav fragment) still produces gitref + 1 repocontents + pullrequest', () => {
     const ops = buildPagePublishOps({}, held({ 'flex.page-x.yaml': 'kind: Flex\n' }), 'x')
     expect(ops.map((op) => op.gvr.resource)).toEqual(['gitrefs', 'repocontents', 'pullrequests'])
-    expect(specOf(ops[1]).path).toBe('chart/templates/flex.page-x.yaml')
+    expect(specOf(ops[1]).path).toBe('helm/portal/templates/flex.page-x.yaml')
   })
 })

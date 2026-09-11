@@ -7,7 +7,7 @@
  * (base64) fills each `{"$fileContent":"<slug>"}` token from the held YAML at compile time, the
  * blueprint preview-GATE denies a publish unless the SAME page was previewed this thread, and
  * stampAuthorship marks the ops. The page's widget CRs therefore reach the cluster ONLY via a git
- * write (RepoContent → krateo-portal-chart → merge → OCI → the Portal composition re-renders) —
+ * write (→ krateo-platformops/portal → merge → OCI → the Portal composition re-renders) —
  * NEVER hand-applied (applyResourceSet's isSandboxOnlyTarget guard already denies that).
  *
  * Pure module (js-yaml + string helpers, no React/network/module-state). The provider owns the
@@ -29,8 +29,55 @@ export interface NavHint {
 /** The held-draft KEY (the `$fileContent` token) for a page's nav fragment. */
 export const pageNavFragmentSlug = (slug: string): string => `nav-fragment.${slug}.yaml`
 
-/** The portal-chart repo PATH the builder writes the nav fragment to (globbed by menu.sidebar-nav.yaml). */
-export const pageNavFragmentPath = (slug: string): string => `chart/files/nav-fragments/${slug}.yaml`
+/**
+ * The Helm chart ROOT inside krateo-platformops/portal — every path a page publish writes hangs off
+ * it. This is ONE constant, deliberately, because the last time it was three literals the repo moved
+ * underneath them and nobody noticed for five weeks: `chart/` was renamed to `helm/portal/` on
+ * 2026-08-03 and no longer exists.
+ *
+ * A stale prefix is INVISIBLE at publish time. The git-provider writes any path you hand it, so the
+ * branch pushes, the change request opens green and the merge is clean — and then nothing renders,
+ * because a file outside the chart directory is not packaged by `helm package` and is not reachable
+ * by the chart's own `.Files.Glob`. Note that GitHub's rename redirect does NOT save us here: it
+ * resolves a stale REPO name, so `krateo-portal-chart` still lands in the right repository, and that
+ * is exactly what makes a stale PATH so easy to miss — the publish looks addressed correctly right
+ * up to the point where the page silently fails to exist.
+ */
+export const PORTAL_PAGE_CHART_ROOT = 'helm/portal'
+
+/** The repo PATH the builder writes the nav fragment to (globbed by menu.sidebar-nav.yaml). */
+export const pageNavFragmentPath = (slug: string): string => `${PORTAL_PAGE_CHART_ROOT}/files/nav-fragments/${slug}.yaml`
+
+/**
+ * The repo path for ONE held page file — the SINGLE router every WRITER shares (the legacy github
+ * git-write set, the BuilderPublish claim, and the preview drawer's Files tab), so the destination
+ * the user is SHOWN and the destination a publish COMMITS cannot drift apart again.
+ *
+ * It routes one way only, and that asymmetry is load-bearing: held keys are the identity the
+ * preview gate and the `$fileContent` substitution match on, so a path that comes BACK from the UI
+ * (an edited file) has to be resolved to its key first — see heldKeyForDisplayedPath.
+ *
+ * Held keys are bare identity tokens, not paths (the preview gate and the `$fileContent`
+ * substitution match on them), so the destination is derived here instead of being baked into the
+ * key. Routing is by key SHAPE and that is sound, not a guess: a nav fragment is
+ * `nav-fragment.<slug>.yaml` (pageNavFragmentSlug) and a widget CR is `<kind-lower>.<name>.yaml`
+ * where the first segment is a Kubernetes Kind — which cannot contain a hyphen — so only the
+ * fragment can ever match. Everything else is a widget CR and belongs in the chart's templates/.
+ */
+export const pagePublishPath = (key: string): string => {
+  const fragment = key.match(/^nav-fragment\.([a-z0-9-]+)\.yaml$/i)
+  return fragment ? pageNavFragmentPath(fragment[1].toLowerCase()) : `${PORTAL_PAGE_CHART_ROOT}/templates/${key}`
+}
+
+/**
+ * A held page draft → the `{path, content}` list a BuilderPublish claim commits. The claim path is
+ * the one that runs on installs with AUTOPILOT_PUBLISH_VIA_GIT_PROVIDER=true (the deployed default),
+ * and it used to publish the held KEYS verbatim — dropping `flex.page-<slug>.yaml` at the REPO ROOT,
+ * which renders exactly as nothing. Blueprints were unaffected because their held keys already are
+ * chart-relative paths; a page's are not, so a page needs this routing applied explicitly.
+ */
+export const pagePublishFiles = (files: Record<string, string>): { content: string; path: string }[] =>
+  Object.entries(files).map(([key, content]) => ({ content, path: pagePublishPath(key) }))
 
 /** The page slug from its `flex.page-<slug>.yaml` root, else null (no root flex → no route → no nav). */
 export const pageRootSlug = (files: Record<string, string>): string | null => {
@@ -109,6 +156,32 @@ export const pageDraftFiles = (widgets: readonly unknown[], nav?: NavHint): Reco
  * discriminator the provider uses to pick the right identity function for the preview-gate.
  */
 export const isPageDraft = (files: Record<string, string>): boolean => !('Chart.yaml' in files)
+
+/**
+ * The inverse of `pagePublishPath`, for bytes coming BACK from the UI: given a path as the preview
+ * drawer DISPLAYS it, return the key that file is held under, or null if it is not a held file.
+ *
+ * The drawer shows a page file at its repo destination (`helm/portal/templates/flex.page-x.yaml`)
+ * while the draft holds it under a bare identity token (`flex.page-x.yaml`). Handing the displayed
+ * path straight to `updateFile` therefore fails its `path in held.files` check and the edit is
+ * silently refused — which is why per-file editing of a PAGE has never once worked, before this
+ * change or after it. A blueprint is unaffected and must stay that way: its held keys ARE repo
+ * paths (`chart/templates/...`), so it matches on the first branch and is never basename-d, which
+ * would collapse two templates of the same name in different directories onto each other.
+ */
+export const heldKeyForDisplayedPath = (path: string, files: Record<string, string>): string | null => {
+  if (path in files) {
+    return path
+  }
+  if (!isPageDraft(files)) {
+    return null
+  }
+  // Invert by ROUTING each held key, not by taking a basename. The nav fragment is why: it is held
+  // as `nav-fragment.<slug>.yaml` but lands as `<slug>.yaml` in a different directory, so its
+  // filename is not its key and a basename resolves it to nothing. Routing forward and comparing
+  // is exact for every shape, and stays exact if the routing rules change.
+  return Object.keys(files).find((key) => pagePublishPath(key) === path) ?? null
+}
 
 /**
  * The page's STABLE identity for the preview-gate (`page:<root-slug>`): the root page flex

@@ -11,7 +11,7 @@ const cfg = (api: Partial<Config['api']>): Config =>
 const origin = { prompt: 'publish it', sessionId: 'sess-1' }
 const allow = () => ({ allowed: true }) as const
 const deny = () => ({ allowed: false, reason: 'denied — preview the chart first' }) as const
-const files = [{ content: 'apiVersion: v1\nkind: ConfigMap\n', path: 'chart/templates/card.foo.yaml' }]
+const files = [{ content: 'apiVersion: v1\nkind: ConfigMap\n', path: 'helm/portal/templates/card.foo.yaml' }]
 
 // The builder-publish CompositionDefinition the resolver reads: served version drives the live GVR.
 const COMPDEF = {
