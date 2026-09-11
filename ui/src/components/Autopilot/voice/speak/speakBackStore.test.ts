@@ -166,12 +166,14 @@ describe('the trigger — voice-initiated turns only', () => {
     expect(store.speakAnswer(VOICE_TURN)).toBe(false)
   })
 
-  it('speaks the chip label after the answer, because the action is not in message.text', () => {
+  it('does NOT speak the chip label — the chip is in the chat, and speech is not the confirm surface', () => {
     const fake = fakeSynthesis([LOCAL_EN])
     const store = createSpeakBackStore(fake.deps)
     store.speakAnswer({ ...VOICE_TURN, actions: [{ label: 'scale payments to 3', readOnly: false, verb: 'runAction' }] })
     fake.finish()
-    expect(fake.spoken.map((utterance) => utterance.text).join(' ')).toContain('This answer proposes an action: scale payments to 3.')
+    const heard = fake.spoken.map((utterance) => utterance.text).join(' ')
+    expect(heard).not.toContain('scale payments to 3')
+    expect(heard).not.toContain('proposes an action')
   })
 
   it('speaks with a LOCAL voice, preferring the exact language, never the remote one', () => {

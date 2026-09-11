@@ -12,18 +12,30 @@
  * deterministic — same input, same output, no clock, no network, no randomness.
  *
  * THE RULE THAT DECIDES EVERY CASE BELOW: a construct that conveys SHAPE rather than
- * PROSE is NAMED, not recited. Reading an indented YAML manifest aloud character by
- * character is not a degraded experience, it is an actively hostile one; a linearised
- * table is noise. So a fenced block becomes "Code block, 12 lines of YAML, shown in the
- * chat" and the contents are never spoken. Prose — paragraphs, headings, list items,
- * inline code, resource names — is spoken as written.
+ * PROSE is SKIPPED — not recited, and no longer announced either. Reading an indented
+ * YAML manifest aloud character by character is not a degraded experience, it is an
+ * actively hostile one; a linearised table is noise. Prose — paragraphs, headings, list
+ * items, inline code, resource names — is spoken as written. Everything else is silent.
  *
- * THE ONE PERMITTED ADDITION (FR 71) is the action sentence. At most one action rides on
- * a reply and it is NOT part of `message.text` — it is a separate `AutopilotActionChip`
- * with its own label. A listener hearing only the prose would never learn that the answer
- * proposes changing something, which would make the spoken version quietly LESS honest
- * than the written one. So the chip's own label is spoken in constant, declared words.
- * That is a navigational cue, not a paraphrase, and it is the only text added.
+ * WHAT CHANGED, AND WHY IT IS A REVERSAL. This file used to ANNOUNCE the shapes it skipped
+ * ("Code block, 12 lines of YAML, shown in the chat") and to append an action sentence
+ * ("This answer proposes an action: X. Confirm it in the chat."), the latter documented as
+ * FR 71's one permitted addition, on the argument that a listener hearing only prose would
+ * never learn the answer proposes a change.
+ *
+ * In use that argument lost to a simpler one: the additions made the voice read things the
+ * user had not asked it to read, on every reply carrying a manifest — which is most of
+ * them. The narration competed with the answer. Reported directly: "it reads too much. It
+ * should read only the text chat, not the proposed action or other stuff."
+ *
+ * The honesty concern FR 71 protected is real, but it is already carried visually: the
+ * action chip renders in the chat, unmissable, and nothing is applied without pressing it.
+ * Speech was never the confirmation surface — the chip is. So the spoken rendering is now
+ * strictly a SUBSET of the written text: prose, in order, nothing added.
+ *
+ * ONE EXCEPTION SURVIVES — the FR 72 truncation tail. A capped answer that simply stops
+ * mid-thought is not "less narration", it is a listener believing they heard all of it.
+ * That is a comprehension failure rather than chattiness, so the tail stays.
  */
 
 import type { AutopilotActionChip } from '../../types'
@@ -129,17 +141,16 @@ const asSentence = (text: string): string => {
   return /[.!?:;]$/.test(trimmed) ? trimmed : `${trimmed}.`
 }
 
-/** "Code block, 12 lines of YAML, shown in the chat." — never the contents (§3.4). */
-const describeCodeBlock = (lines: number, language: string): string => {
-  const count = `${lines} line${lines === 1 ? '' : 's'}`
-  const named = language.trim()
-  return named
-    ? `Code block, ${count} of ${named}, shown in the chat.`
-    : `Code block, ${count}, shown in the chat.`
-}
+/**
+ * A fenced block is SILENT — not its contents (hostile to recite) and no longer an
+ * announcement either. The parameters are kept so the call sites still read as a
+ * deliberate skip rather than a dropped branch, and so restoring the announcement is a
+ * one-line change if it is ever wanted back.
+ */
+const describeCodeBlock = (_lines: number, _language: string): string => ''
 
-/** "Table with 6 rows, shown in the chat." — column structure does not survive speech. */
-const describeTable = (rows: number): string => `Table with ${rows} row${rows === 1 ? '' : 's'}, shown in the chat.`
+/** A table is SILENT, for the same reason: column structure does not survive speech. */
+const describeTable = (_rows: number): string => ''
 
 /** Whole-token pronunciation respelling (FR 70). Never changes WHICH words are spoken. */
 const applyPronunciations = (text: string): string => {
@@ -270,20 +281,16 @@ export const capSpeakable = (text: string, cap: number = SPEAK_CAP_CHARS): { tex
 }
 
 /**
- * FR 71: the fixed sentence carrying the action chip's OWN label. Constant declared
- * words, never a paraphrase of the answer. An approval chip says so, because "confirm it"
- * understates a tool call that is already paused waiting for a human.
+ * FR 71 REVERSED: no action sentence. This returned "This answer proposes an action: X.
+ * Confirm it in the chat." — constant declared words, and still the single largest source
+ * of speech the user did not ask for, on every reply that carries a chip.
+ *
+ * Kept as a function returning "" rather than deleted: speakableForMessage still composes
+ * it, so the seam where an addition WOULD go stays visible and auditable, and the export
+ * keeps its test surface. Anything reinstated here must clear the same bar FR 68 sets —
+ * it has to already be in the written text, or it does not get spoken.
  */
-export const actionSentence = (actions?: AutopilotActionChip[]): string => {
-  const [chip] = actions ?? []
-  const label = chip?.label?.trim()
-  if (!label) {
-    return ''
-  }
-  return chip.verb === 'approval'
-    ? `This answer proposes an action: ${label}. It is awaiting your approval in the chat.`
-    : `This answer proposes an action: ${label}. Confirm it in the chat.`
-}
+export const actionSentence = (_actions?: AutopilotActionChip[]): string => ''
 
 /** What speak-back reads: the finalized message text plus (only) its chip label. */
 export interface SpeakableMessage {
