@@ -67,6 +67,17 @@
                   "valueKey": {
                     "description": "key used to extract the value from row data",
                     "type": "string"
+                  },
+                  "width": {
+                    "description": "antd Table column width — a pixel number, or any CSS length string. Mirrors antd ColumnType.width. Optional: omitted, antd sizes the column as it does today.",
+                    "type": [
+                      "integer",
+                      "string"
+                    ]
+                  },
+                  "minWidth": {
+                    "description": "antd Table column minWidth in px. Mirrors antd ColumnType.minWidth. Usually the better lever under fitContent: a fixed width re-creates the overflow it was meant to fix, while a floor keeps a column readable and lets the others flex.",
+                    "type": "integer"
                   }
                 },
                 "required": [
@@ -78,7 +89,7 @@
             },
             "dataSource": {
               "type": "array",
-              "description": "antd Table dataSource \u2014 the table rows (renamed from `data`; `data` still accepted for back-compat)",
+              "description": "antd Table dataSource — the table rows (renamed from `data`; `data` still accepted for back-compat)",
               "items": {
                 "type": "array",
                 "description": "Row represented as array of cells",

@@ -1,5 +1,11 @@
 .headerEllipsis {
-  max-width: 400px;
+  /* 100%, not a fixed 400px. The old clamp truncated headers INDEPENDENTLY of fitContent — a
+     second, invisible truncation source underneath the table-level one, which is how the agents
+     inventory lost "What it is for" / "Model" / "Owner" even with room to spare. At 100% the
+     COLUMN decides: under fitContent the th is container-constrained so the header ellipsises to
+     its column, and with scroll.x=max-content the th sizes to content so the header shows in full.
+     Either way the column's own width (now declarable) is the single constraint. */
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

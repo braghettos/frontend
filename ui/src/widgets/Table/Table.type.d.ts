@@ -38,6 +38,14 @@ export interface Table {
          * key used to extract the value from row data
          */
         valueKey: string
+        /**
+         * antd Table column width — a pixel number, or any CSS length string. Mirrors antd ColumnType.width. Optional: omitted, antd sizes the column as it does today.
+         */
+        width?: number | string
+        /**
+         * antd Table column minWidth in px. Mirrors antd ColumnType.minWidth. Usually the better lever under fitContent: a fixed width re-creates the overflow it was meant to fix, while a floor keeps a column readable and lets the others flex.
+         */
+        minWidth?: number
       }[]
       /**
        * antd Table dataSource — the table rows (renamed from `data`; `data` still accepted for back-compat)

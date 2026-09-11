@@ -356,7 +356,9 @@ export interface Form {
         /**
          * map of field-value → action id
          */
-        map: Record<string, string>
+        map: {
+          [k: string]: string
+        }
         /**
          * action id used when the field value is not present in `map`
          */
