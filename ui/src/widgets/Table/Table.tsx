@@ -84,7 +84,7 @@ const Table = ({ resourcesRefs, serverPagination, uid, widgetData }: WidgetProps
   return (
     <AntdTable
       bordered={bordered}
-      columns={columns?.map(({ color, title, valueKey }, index) => ({
+      columns={columns?.map(({ color, minWidth, title, valueKey, width }, index) => ({
         // UX #13: inferred client-side sorting — an automatic `sorter` comparing
         // the RAW dataSource values (numeric / kubectl-age / ISO-date / string,
         // sniffed per column) + `align: 'right'` for numeric/age columns. No
@@ -95,6 +95,13 @@ const Table = ({ resourcesRefs, serverPagination, uid, widgetData }: WidgetProps
         // table — this is what lets the table fit the container without a horizontal scrollbar.
         ellipsis: fitContent ? { showTitle: true } : undefined,
         key: `${uid}-col-${index}`,
+        // Per-column sizing, straight through to antd (ColumnType.width / .minWidth). Both optional:
+        // undefined leaves antd's own sizing exactly as it was, so no existing table moves.
+        //
+        // minWidth is usually the one you want. Under fitContent the table shrinks to its container,
+        // so a fixed `width` on every column just re-creates the overflow it was meant to fix, while
+        // a floor keeps one column readable and lets the rest flex around it.
+        minWidth,
         render: (_: unknown, row: NonNullable<TableWidgetData['dataSource']>[number]) => {
           const cell = row.find((cell) => cell.valueKey === valueKey)
 
@@ -212,6 +219,7 @@ const Table = ({ resourcesRefs, serverPagination, uid, widgetData }: WidgetProps
             </Typography.Text>
           </div>
         ),
+        width,
       }))}
       dataSource={dataTable}
       key={uid}

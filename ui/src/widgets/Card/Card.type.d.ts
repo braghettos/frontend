@@ -246,13 +246,14 @@ export interface Card {
        */
       extra?: string
       /**
-       * how `extra` renders top-right: `text` (default, plain), `badge` (a status pill — glow dot + uppercase mono, e.g. CONVERGED/DRIFT/DEGRADED), or `tag` (soft antd Tag pill — e.g. "Up to date"/"Update available")
+       * how `extra` renders top-right: `text` (default, plain), `badge` (glow dot + uppercase mono, for CONVERGED/DRIFT/DEGRADED), or `tag` (soft antd Tag pill — for Up to date / status labels)
        */
       extraVariant?: 'text' | 'badge' | 'tag'
       /**
        * colour token: antd Badge status for `extraVariant: badge`; antd Tag color for `extraVariant: tag`
        */
-      extraStatus?: 'success' | 'processing' | 'warning' | 'error' | 'default' | 'green' | 'gold' | 'red' | 'blue' | 'violet'
+      extraStatus?:
+        'success' | 'processing' | 'warning' | 'error' | 'default' | 'green' | 'gold' | 'red' | 'blue' | 'violet'
       /**
        * resourceRefId of a widget (e.g. a Button) rendered top-right of the card header — a real, independently-actioned slot with its own icon/size/navigation, distinct from the plain-text `extra`. Mirrors the `cover`/`footer` widget slots; renders a nested WidgetRenderer, so it does NOT make the whole card the click target the way `extra` + `clickActionId` does.
        */

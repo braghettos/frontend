@@ -17,10 +17,11 @@ export interface Flex {
        */
       allowedResources: (
         | 'barcharts'
-        | 'buttons'
         | 'buttongroups'
+        | 'buttons'
         | 'cards'
         | 'cols'
+        | 'dividers'
         | 'filters'
         | 'flexes'
         | 'flowcharts'
