@@ -188,12 +188,19 @@ spec:
                               - green
                               - violet
                             type: string
+                          minWidth:
+                            description: 'antd Table column minWidth in px. Mirrors antd ColumnType.minWidth. Usually the better lever under fitContent: a fixed width re-creates the overflow it was meant to fix, while a floor keeps a column readable and lets the others flex.'
+                            format: int32
+                            type: integer
                           title:
                             description: column header label
                             type: string
                           valueKey:
                             description: key used to extract the value from row data
                             type: string
+                          width:
+                            description: 'antd Table column width — a pixel number, or any CSS length string. Mirrors antd ColumnType.width. Optional: omitted, antd sizes the column as it does today.'
+                            x-kubernetes-int-or-string: true
                         required:
                           - title
                           - valueKey
