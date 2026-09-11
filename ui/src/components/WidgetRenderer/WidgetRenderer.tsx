@@ -9,7 +9,7 @@ import { getWidgetModule } from '../../widgets/registry'
 import { useFilter } from '../FiltesProvider/FiltersProvider'
 import { FreshnessBadge } from '../FreshnessBadge/FreshnessBadge'
 import { ScrollPagination } from '../Pagination/ScrollPagination'
-import { WidgetError, WidgetForbidden, WidgetLoading, WidgetNotFound, WidgetTimeout } from '../WidgetStates'
+import { WidgetError, WidgetErrorBoundary, WidgetForbidden, WidgetLoading, WidgetNotFound, WidgetTimeout } from '../WidgetStates'
 
 import styles from './WidgetRenderer.module.css'
 
@@ -240,7 +240,17 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
     return null
   }
 
-  const renderedWidget = parseWidget(widget, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchingResourcesRefs, serverPagination)
+  // Wrapped in a boundary so a render-time throw from THIS widget shows this widget's error card
+  // instead of taking the page with it. React 19 unmounts the whole tree on an uncaught render
+  // error, and the app had no boundary anywhere — so malformed `widgetDataTemplate` output (which
+  // --dry-run=server never validates) blanked the page rather than failing in place.
+  // `resetKey={dataUpdatedAt}` un-latches the boundary when a refetch brings new data, so a
+  // transiently-bad payload does not leave the widget permanently stuck on its first bad render.
+  const renderedWidget = (
+    <WidgetErrorBoundary resetKey={dataUpdatedAt} widgetId={`${kind} @ ${widgetEndpoint}`}>
+      {parseWidget(widget, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchingResourcesRefs, serverPagination)}
+    </WidgetErrorBoundary>
+  )
 
   // Overlay a tiny freshness DOT on the widget ONLY when (1) the widget CR OPTS IN via
   // `spec.freshness: true` AND (2) its state is worth noticing — actively refreshing, or
