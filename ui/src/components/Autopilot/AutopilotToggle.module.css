@@ -66,6 +66,6 @@
   display: inline-block;
   flex: 0 0 auto;
   height: 6px;
-  margin-left: 2px;
+  margin-left: var(--spacing-xxs);
   width: 6px;
 }

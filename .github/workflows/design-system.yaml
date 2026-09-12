@@ -1,0 +1,55 @@
+# Design-system enforcement for this repo's own stylesheets.
+#
+# WHY THIS EXISTS. The design system in design/ documents a failure mode it kept finding: a thing
+# is declared and then nothing consumes it. #49 shipped a 12-role type scale with ZERO consumers;
+# the spacing tokens were used by 30 of 225 declarations; `allowedResources` is declared on seven
+# container widgets and enforced by nothing. A rule nobody checks decays into exactly that, and
+# until this workflow existed the design system was an instance of its own diagnosis.
+#
+# It gates against a BASELINE (design/lint/css-baseline.json) rather than demanding a clean tree.
+# The repo carries ~314 pre-existing violations, so a plain gate would fail on its first run and be
+# switched off within a day — which is how a previous composition lint died (23 false positives
+# against 1 real defect, then deleted). New code is held to the rule; the existing debt stays
+# counted and visible, and `--summary` shows it burning down.
+#
+# The lint's own self-test runs first: a check that has stopped firing is worse than no check, so
+# every rule must still fire on its violations fixture AND stay silent on its clean one.
+
+name: design-system
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  css-tokens:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Both halves, before trusting the result: every rule must fire on the violations fixture
+      # and stay silent on the clean one, which encodes the cases that would make it noisy.
+      - name: Self-test the lints
+        run: |
+          python3 design/lint/test_css_lint.py
+          pip install --quiet pyyaml
+          python3 design/lint/test_lint.py
+
+      - name: Token adoption (fails on anything above the baseline)
+        run: python3 design/lint/lint-css-tokens.py ui/src
+
+      # Informational: prints what is left per rule so the debt is visible in the log even when
+      # the gate passes. Never fails the job.
+      - name: Remaining debt
+        if: always()
+        run: python3 design/lint/lint-css-tokens.py ui/src --summary
