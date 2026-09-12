@@ -40,7 +40,11 @@ The existing error card only guards the fetch and HTTP paths. So malformed-but-s
 
 ### X2 — “Denied”, “not found” and “broken” must be distinguishable.
 
-**Status:** severe → **partly fixed**
+**Status:** severe → **fixed**, residual **decided**
+
+> **Resolved, and the residual is a decision rather than a gap.** 403 and 404 now render distinct calm states (#196).
+>
+> RBAC-denied child `resourcesRefs` remain filtered before any widget sees them, so a denial still reads as absence — and that is now **deliberate**. The alternative, announcing “3 items hidden by your permissions”, leaks the existence and count of resources outside a tenant’s scope, which is worse than the ambiguity it removes. Recorded so this is not re-filed as a defect.
 
 > **Resolved since this rule was written.** 403 and 404 now render distinct calm states (`WidgetForbidden`, `WidgetNotFound`) rather than the red cross. Landed in PR #196. **Still open:** RBAC-denied child `resourcesRefs` are filtered before any widget sees them, so a denial can still read as absence.
 

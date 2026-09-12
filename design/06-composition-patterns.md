@@ -35,9 +35,13 @@ Note the two trailing items: `alerts-hint` renders on every visit (its `hideWhen
 
 *Evidence: measured across the 29 page compositions at origin/main*
 
-### G2 — Detail pages stack cards — and a stack past six cards folds its tail into panel tabs.
+### G2 — Detail pages stack. Tab the reference material; never tab the narrative.
 
-**Status:** judgement
+**Status:** judgement → **decided**
+
+> **Decided.** Stack, and fold only the *reference* material into panel tabs — evidence tables, related items, audit trails. The narrative sections stay stacked.
+>
+> The reason is not layout, it is grounding: **content on an unvisited tab is not in Autopilot’s context envelope** (A10). Tabbing half of incident-detail means the agent sees half an incident, which degrades the very RCA flow the page exists to support. So the cap is a guide and the narrative/reference split is the actual rule.
 
 Five pages stack, three compose a Row grid, and nothing separates the groups by subject. They diverged. Here is the call: **stack.**
 

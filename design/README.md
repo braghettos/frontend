@@ -63,17 +63,20 @@ enforcement notes on each layer are for, and it is the standard this document sh
 
 ## Where to start
 
-Three things retire the most recurrence per unit of work:
+Two things retire the most recurrence per unit of work:
 
-1. **`PageHeader` (C5).** Six composition rules stop being rules you must remember and become
-   defaults you cannot get wrong. It is also the fix for the most visible inconsistency in the
-   product: two pages about operational events build the same chrome from different primitives
-   under three different names.
-2. **The remaining error-state work (X2).** RBAC-denied child refs are still filtered before any
-   widget sees them, so a denial reads as absence — on a platform where per-user scoping is a
-   feature.
-3. **The token-adoption sweep (T3, T4)** — *after* the lint exists. It is the largest measured gap,
-   and fixing it first is churn that re-drifts.
+1. **Adopt `PageHeader` (C5).** The component is built; adopting it collapses 46 hand-rolled header
+   CRs to about 14 across roughly a dozen pages. Six composition rules stop being rules you must
+   remember and become defaults you cannot get wrong. It is also the fix for the most visible
+   inconsistency in the product: two pages about operational events build the same chrome from
+   different primitives under three different names.
+2. **The token-adoption sweep (T3, T4)** — *after* a CSS lint exists. The scale decision is made
+   (canonical `--krateo-text-*` in, legacy `--font-size-*` out), so the ~140 declarations are
+   mechanical; doing them before the lint is churn that re-drifts.
+
+**Not on this list any more:** X2's RBAC residual. A denial reading as absence is now a
+[decided position](04-silent-failures.md), not a gap — announcing hidden items would leak the
+existence and count of resources outside a tenant's scope.
 
 ## How rules are marked
 

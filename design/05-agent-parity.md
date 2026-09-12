@@ -64,7 +64,13 @@ Page context is **not** passed by the entry point. It is snapshotted from the li
 
 ### A4 — One canonical label for “open Autopilot with a seeded prompt”.
 
-**Status:** gap
+**Status:** gap → **resolved**
+
+> **Corrected, then resolved.** This rule recorded FOUR label variants on medium confidence. Measured against the chart there were **three** across six CTAs — “Ask Autopilot →”, “Investigate with Autopilot”, “Diagnose with Autopilot”. “Troubleshoot with Autopilot” does not exist.
+>
+> All six now read **“Ask Autopilot”** (krateo-platformops/portal#151): it describes what the *button* does, where the other two described what the page was about.
+>
+> **The rule governs button labels only.** `listy.alerts-hint` is a described strip with a detail line rather than a button, and its title (“Author an alert with Autopilot”) is deliberately not the canonical label. A sweep that treats every Autopilot-adjacent string as a CTA label will flag it wrongly.
 
 Four variants for the same mechanism: *“Ask Autopilot →”* (builder pages), *“Investigate with Autopilot”* (alert detail), *“Diagnose”* (composition detail), *“Troubleshoot with Autopilot”* (observability).
 

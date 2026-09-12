@@ -110,9 +110,13 @@ The header notification bell — present on every page — has no `aria-label`, 
 
 ## Colour pipelines
 
-### C11 — A status colour name resolves through `getColorCode` — never straight into an antd colour prop.
+### C11 — Two colour vocabularies share value names, and neither schema said which it took.
 
-**Status:** gap
+**Status:** gap → **corrected: not a defect**
+
+> **Corrected.** This rule said `Button.color` wrongly bypasses `getColorCode` while `iconColor` beside it routes through. **They are two different vocabularies by design.** `Button.color` mirrors antd’s own 16-value preset list verbatim, per the authoring convention that `widgetData` copies antd’s enums exactly — and three of its values (`default`, `primary`, `danger`) are not colours at all. Routing it through the palette would break antd fidelity and mangle those three.
+>
+> The real defect is the **collision**: `green`, `blue`, `red` and `orange` exist in *both* vocabularies with different results. Fixed in the schemas and CRDs (#201) so a CR author learns it by reading, rather than by comparing two rendered pages.
 
 `Button.tsx:57` passes `color` directly to antd’s native preset ramp, while `iconColor` four lines below routes through `getColorCode`. So `color: 'green'` renders antd’s stock green on a Button and Krateo’s brand green on a Table column — same string, two pipelines, two hexes.
 

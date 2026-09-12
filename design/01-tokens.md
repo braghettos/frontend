@@ -22,7 +22,11 @@ Reworded from an earlier, over-confident version of this rule. `buildComponents`
 
 ### T3 — One type scale, and it must be the one that is used.
 
-**Status:** severe
+**Status:** severe → **decided, not yet done**
+
+> **Decided.** The canonical `--krateo-text-*` scale is adopted and the legacy `--font-size-*` retired. It is the scale the Brand v2 work specified, and it has real role names (`text-h1`, `text-body`, `text-label`) rather than t-shirt sizes.
+>
+> That makes the sweep ~140 declarations: the 95 hardcoded ones plus the 45 existing legacy uses. It should not start until a CSS lint exists to hold it — otherwise it is churn that re-drifts, which is the argument that made the chart lint worth building first.
 
 Two numerically incompatible scales ship side by side. The canonical 12-role scale from [#49](https://github.com/krateo-platformops/frontend/issues/49) — `text-display:64` … `text-body:15`, emitted as `--krateo-text-*` — has **zero consumers anywhere**. The legacy 6-step `--font-size-*` has 45. And **95 of 140 `font-size` declarations (68%) bypass both**, including values on neither scale: 9, 9.5, 10, 10.5, 11, 11.5, 12.5, 19, 26px.
 
