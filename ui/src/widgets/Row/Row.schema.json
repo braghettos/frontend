@@ -42,6 +42,7 @@
                   "linecharts",
                   "listies",
                   "markdowns",
+                  "pageheaders",
                   "paragraphs",
                   "piecharts",
                   "rangepickers",
@@ -84,7 +85,7 @@
                   },
                   "xs": {
                     "type": "integer",
-                    "description": "antd Col xs span — responsive override of `size` at narrow widths / a shrunk content column (e.g. when the Autopilot rail is open)",
+                    "description": "antd Col xs span \u2014 responsive override of `size` at narrow widths / a shrunk content column (e.g. when the Autopilot rail is open)",
                     "minimum": 0,
                     "maximum": 24
                   },

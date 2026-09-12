@@ -1,0 +1,44 @@
+/*
+ * Spacing comes from the shared scale, not from per-page judgement — the rhythm between a page
+ * header and the content under it was previously set ad hoc by whichever CR happened to wrap it.
+ */
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-lg);
+  width: 100%;
+}
+
+.top {
+  width: 100%;
+}
+
+/* The title, its counter and its tags share ONE baseline-centred row. Getting this wrong per-page
+ * is the defect reported on four separate pages across five findings. */
+.titleLine {
+  min-width: 0;
+}
+
+.title {
+  margin: 0 !important;
+  min-width: 0;
+}
+
+/* Beside the title and on its type step, in the muted ink — part of the title, not a second fact
+ * competing with it. */
+.counter {
+  color: var(--gray-color);
+  font-weight: 400;
+  margin-left: var(--spacing-xs);
+}
+
+.actions {
+  flex-shrink: 0;
+}
+
+.subtitle {
+  color: var(--gray-color);
+  margin: 0 !important;
+  max-width: 68ch;
+}
