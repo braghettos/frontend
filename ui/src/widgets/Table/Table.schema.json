@@ -48,7 +48,7 @@
                 "type": "object",
                 "properties": {
                   "color": {
-                    "description": "the color of the value (or the icon) to be represented",
+                    "description": "the color of the value (or the icon) to be represented. These are KRATEO PALETTE names resolved through the shared palette \u2014 not antd presets. The same name on a Button takes antd's vocabulary instead and renders a different shade.",
                     "type": "string",
                     "enum": [
                       "blue",
@@ -69,7 +69,7 @@
                     "type": "string"
                   },
                   "width": {
-                    "description": "antd Table column width — a pixel number, or any CSS length string. Mirrors antd ColumnType.width. Optional: omitted, antd sizes the column as it does today.",
+                    "description": "antd Table column width \u2014 a pixel number, or any CSS length string. Mirrors antd ColumnType.width. Optional: omitted, antd sizes the column as it does today.",
                     "type": [
                       "integer",
                       "string"
@@ -89,7 +89,7 @@
             },
             "dataSource": {
               "type": "array",
-              "description": "antd Table dataSource — the table rows (renamed from `data`; `data` still accepted for back-compat)",
+              "description": "antd Table dataSource \u2014 the table rows (renamed from `data`; `data` still accepted for back-compat)",
               "items": {
                 "type": "array",
                 "description": "Row represented as array of cells",
@@ -114,7 +114,7 @@
                     },
                     "color": {
                       "type": "string",
-                      "description": "per-cell color — for a `tag` cell, an antd Tag color (e.g. green / red / gold / blue); for a jsonSchemaType cell it overrides the column color. Lets each row carry its own color (e.g. status)."
+                      "description": "per-cell color \u2014 for a `tag` cell, an antd Tag color (e.g. green / red / gold / blue); for a jsonSchemaType cell it overrides the column color. Lets each row carry its own color (e.g. status)."
                     },
                     "format": {
                       "type": "string",
@@ -123,7 +123,7 @@
                         "date",
                         "datetime"
                       ],
-                      "description": "optional display format for a string value — `relative` (e.g. \"14d ago\"), `date`, or `datetime`. The raw value stays in the data; only the rendering changes."
+                      "description": "optional display format for a string value \u2014 `relative` (e.g. \"14d ago\"), `date`, or `datetime`. The raw value stays in the data; only the rendering changes."
                     },
                     "resourceRefId": {
                       "type": "string",
