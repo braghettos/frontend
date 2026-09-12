@@ -8,127 +8,99 @@
       "default": "v1beta1"
     },
     "kind": {
-      "default": "Col",
-      "description": "Col is a layout component that arranges its children in a vertical stack, aligning them one above the other with spacing between them",
-      "type": "string"
+      "type": "string",
+      "description": "name of the k8s Custom Resource",
+      "default": "PageHeader"
     },
     "spec": {
       "type": "object",
+      "required": [
+        "widgetData",
+        "resourcesRefs"
+      ],
       "properties": {
         "widgetData": {
+          "description": "the data that will be passed to the widget on the frontend",
           "type": "object",
           "required": [
+            "title",
             "allowedResources",
             "items"
           ],
+          "additionalProperties": false,
           "properties": {
+            "title": {
+              "type": "string",
+              "description": "the page title (H1). The one required field \u2014 a page header without a title is not a page header"
+            },
+            "counter": {
+              "type": "integer",
+              "description": "an optional count rendered in brackets beside the title, on the title's own type step (e.g. '(397)'). Use for 'how many of these are there', never for a status",
+              "format": "int32"
+            },
+            "subtitle": {
+              "type": "string",
+              "description": "one line of supporting context below the title. Must NOT restate the title \u2014 say it once per page"
+            },
+            "tags": {
+              "type": "array",
+              "description": "status pills on the title line, vertically centred with it",
+              "items": {
+                "type": "object",
+                "required": [
+                  "label"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "description": "the pill text. Required: a colour with no label carries meaning by colour alone, which a screen reader and a colourblind reader both miss"
+                  },
+                  "color": {
+                    "type": "string",
+                    "description": "a palette colour NAME (resolved through the shared palette, never an antd preset or a hex)",
+                    "enum": [
+                      "blue",
+                      "darkBlue",
+                      "orange",
+                      "gray",
+                      "red",
+                      "green",
+                      "violet"
+                    ]
+                  }
+                }
+              }
+            },
             "allowedResources": {
               "description": "the list of resources that are allowed to be children of this widget or referenced by it",
               "type": "array",
               "items": {
                 "type": "string",
                 "enum": [
-                  "barcharts",
-                  "buttongroups",
                   "buttons",
-                  "cards",
-                  "cols",
-                  "dividers",
-                  "filters",
-                  "flexes",
-                  "flowcharts",
-                  "forms",
-                  "linecharts",
-                  "listies",
-                  "markdowns",
-                  "pageheaders",
-                  "paragraphs",
-                  "piecharts",
-                  "rangepickers",
-                  "rows",
-                  "statistics",
-                  "tables",
-                  "tabs",
-                  "tags",
-                  "yamlviewers"
+                  "buttongroups",
+                  "flexes"
                 ]
               }
             },
             "items": {
-              "description": "the items of the column",
+              "description": "the page's actions, rendered right-aligned on the title line. At most one should be `type: primary`",
               "type": "array",
               "items": {
                 "type": "object",
                 "required": [
                   "resourceRefId"
                 ],
+                "additionalProperties": false,
                 "properties": {
                   "resourceRefId": {
-                    "description": "the identifier of the k8s Custom Resource that should be represented, usually a widget",
                     "type": "string"
                   }
-                },
-                "additionalProperties": false
+                }
               }
-            },
-            "span": {
-              "description": "antd Col span \u2014 cells occupied, 0 (hidden) to 24 (full width). Renamed from `size`, which is still accepted.",
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 24
-            },
-            "offset": {
-              "type": "integer",
-              "description": "antd Col offset",
-              "minimum": 0,
-              "maximum": 24
-            },
-            "order": {
-              "type": "integer",
-              "description": "antd Col order"
-            },
-            "flex": {
-              "type": "string",
-              "description": "antd Col flex"
-            },
-            "xs": {
-              "type": "integer",
-              "description": "antd Col xs span",
-              "minimum": 0,
-              "maximum": 24
-            },
-            "sm": {
-              "type": "integer",
-              "description": "antd Col sm span",
-              "minimum": 0,
-              "maximum": 24
-            },
-            "md": {
-              "type": "integer",
-              "description": "antd Col md span",
-              "minimum": 0,
-              "maximum": 24
-            },
-            "lg": {
-              "type": "integer",
-              "description": "antd Col lg span",
-              "minimum": 0,
-              "maximum": 24
-            },
-            "xl": {
-              "type": "integer",
-              "description": "antd Col xl span",
-              "minimum": 0,
-              "maximum": 24
-            },
-            "xxl": {
-              "type": "integer",
-              "description": "antd Col xxl span",
-              "minimum": 0,
-              "maximum": 24
             }
-          },
-          "additionalProperties": false
+          }
         },
         "resourcesRefs": {
           "type": "object",
@@ -230,7 +202,8 @@
               }
             },
             "additionalProperties": false
-          }
+          },
+          "additionalProperties": false
         },
         "resourcesRefsTemplate": {
           "type": "array",
@@ -278,17 +251,7 @@
             "additionalProperties": false
           }
         }
-      },
-      "required": [
-        "widgetData",
-        "resourcesRefs"
-      ],
-      "additionalProperties": false
+      }
     }
-  },
-  "required": [
-    "kind",
-    "spec",
-    "version"
-  ]
+  }
 }

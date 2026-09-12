@@ -170,6 +170,7 @@ spec:
                           - linecharts
                           - listies
                           - markdowns
+                          - pageheaders
                           - paragraphs
                           - piecharts
                           - rangepickers

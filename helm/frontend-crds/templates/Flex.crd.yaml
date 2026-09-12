@@ -183,6 +183,7 @@ spec:
                           - listies
                           - markdowns
                           - menus
+                          - pageheaders
                           - paragraphs
                           - piecharts
                           - rangepickers
