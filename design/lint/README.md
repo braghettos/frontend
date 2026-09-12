@@ -1,4 +1,66 @@
-# lint-portal-consistency
+# Design-system lints
+
+Two scripts. `lint-portal-consistency.py` checks the composition rules against a chart's widget
+CRs; `lint-css-tokens.py` checks token adoption in this repo's own stylesheets.
+
+---
+
+## lint-css-tokens
+
+Layer 1 rules from [`../01-tokens.md`](../01-tokens.md), run against `ui/src`.
+
+```bash
+python3 lint-css-tokens.py ../../ui/src              # fail on anything above baseline
+python3 lint-css-tokens.py ../../ui/src --summary    # the debt ledger, per rule
+python3 lint-css-tokens.py ../../ui/src --update-baseline
+```
+
+| Rule | ID | Catches |
+|---|---|---|
+| `font-size` | T3 | a size that is a raw number rather than a token |
+| `spacing` | T4 | `padding`/`margin` not resolving to `--spacing-*` (`0`/`auto` exempt) |
+| `gap` | T4 | `gap` not resolving to `--spacing-*` |
+| `hex-literal` | T1 | a hardcoded colour — a hex inside a `var()` **fallback** is exempt |
+| `breakpoint` | T6 | a sixth breakpoint value; no token exists yet, so this stops divergence growing |
+| `unguarded-animation` | T9 | an `infinite` animation with no `prefers-reduced-motion` block in the same file |
+
+### The baseline is the point
+
+This codebase carries **314 pre-existing violations**. A plain gate would fail CI on its first run
+and be switched off within a day — which is exactly how the previous composition lint died. So the
+current state is recorded in `css-baseline.json`: **CI fails on anything not in it**, holding new
+code to the rule while the existing debt stays counted and visible.
+
+That makes the baseline a **debt ledger, not an excuse**. `--summary` prints what is left per rule,
+and the file shrinks as the sweep proceeds:
+
+```
+rule                   id      now  baseline   delta
+font-size              T3       95        95       +0
+spacing                T4      142       142       +0
+gap                    T4       68        68       +0
+hex-literal            T1        4         4       +0
+breakpoint             T6        5         5       +0
+unguarded-animation    T9        0         0       +0
+```
+
+It records per-file **counts**, not line numbers, so an edit elsewhere in a file does not
+invalidate it and a file whose violations *drop* is never a failure. The cost is that the specific
+new line cannot be named — every violation in the file is listed, and the author knows which one
+they just wrote.
+
+### Two exemptions that keep it quiet
+
+- **A hex inside `var(--token, #888)` is a fallback**, not a hardcoded colour. Flagging it would
+  teach authors to delete their fallbacks. This exemption alone took `hex-literal` from 9 to 4.
+- **`0` and `auto` are not sizes.** Requiring `var(--spacing-*)` for `margin: 0 auto` would be
+  absurd, and a lint that demands absurd things gets switched off.
+
+Both halves are pinned by `test_css_lint.py`.
+
+---
+
+## lint-portal-consistency
 
 Static checks for the composition rules in [`../03-composition.md`](../03-composition.md) and
 [`../04-silent-failures.md`](../04-silent-failures.md).
