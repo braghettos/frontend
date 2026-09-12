@@ -289,11 +289,62 @@ def rule_legacy_envelope(crs):
 
 # Source: ui/docs/cr-migration-map.json. Embedded so the script runs standalone in a chart's CI
 # without needing this repo checked out beside it.
+# Kind → plural, for the kinds where it is NOT simply +s. Taken from the CRDs' own
+# `spec.names.plural`, because deriving it (`Flex` → `flexs`) got 125 references wrong on the first
+# real run — the rule reported nearly every ref in the chart as missing.
+PLURALS = {
+    'Flex': 'flexes', 'Listy': 'listies', 'Checkbox': 'checkboxes', 'Switch': 'switches',
+    'Progress': 'progresses', 'Tabs': 'tabs', 'Steps': 'steps', 'Filters': 'filters',
+    'Descriptions': 'descriptions',
+}
+
 RENAMED_KINDS = {'Panel': 'Card', 'Column': 'Col', 'TabList': 'Tabs', 'NavMenu': 'Menu', 'DataGrid': 'Listy', 'List': 'Listy'}
 REMOVED_KINDS = {'Page', 'Route', 'RoutesLoader', 'NavMenuItem', 'EventList', 'CompositionReference'}
 
+def rule_missing_target(crs):
+    """A resourcesRefs entry naming a CR that does not exist in the chart.
+
+    `dangling-ref` checks the other direction — an items[] id with no resourcesRefs entry — and
+    both are needed, because they fail differently. This one is the DELETION hazard: remove a CR
+    and leave a reference to it somewhere else, and the parent silently renders without that child
+    (Row/Col/Flex/Card drop it with only a console error). Nothing in the chart complains, and the
+    page just says less than it used to.
+
+    That is the top risk of the PageHeader migration, which deletes 3-6 CRs per page across a dozen
+    pages — the exact shape this rule exists to catch.
+
+    Only widget kinds are checked. A ref to a Secret, a ConfigMap or any non-widget resource is
+    legitimately outside this chart's template set."""
+    by_plural = {}
+    for fname, doc in crs:
+        kind = doc.get('kind') or ''
+        name = ((doc.get('metadata') or {}).get('name') or '')
+        if kind and name:
+            by_plural.setdefault(PLURALS.get(kind, kind.lower() + 's'), set()).add(name)
+
+    out = []
+    for fname, doc in crs:
+        for ref in (((doc.get('spec') or {}).get('resourcesRefs') or {}).get('items') or []):
+            if not isinstance(ref, dict):
+                continue
+            plural, name = ref.get('resource'), ref.get('name')
+            api = str(ref.get('apiVersion') or '')
+            # Only widget CRs live in this chart's template set; anything else is out of scope.
+            if not plural or not name or 'widgets.templates.krateo.io' not in api:
+                continue
+            # NO "does this plural exist?" guard. An earlier version skipped a plural with zero
+            # instances, which inverted the rule: a reference to the LAST Card in a chart — the
+            # exact case where a deletion breaks something — was the one case it ignored. The
+            # apiVersion check above is the scoping; anything under widgets.templates.krateo.io
+            # must resolve inside this chart.
+            if name not in by_plural.get(plural, set()):
+                out.append((fname, f'resourcesRefs -> {plural}/{name} does not exist in this chart — the parent will render without it'))
+    return out
+
+
 RULES = {
     'dead-kind': (rule_dead_kind, 'X11'),
+    'missing-target': (rule_missing_target, 'X13'),
     'legacy-envelope': (rule_legacy_envelope, 'X12'),
     'dangling-ref': (rule_dangling_ref, 'X4'),
     'row-nav-placeholder': (rule_row_nav_placeholder, 'P10'),
