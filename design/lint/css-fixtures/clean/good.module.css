@@ -8,6 +8,9 @@
   gap: var(--spacing-sm);
   /* `0` and `auto` are not sizes — requiring a token for them would be absurd. */
   margin: 0 auto;
+  /* Nor is `0 !important` — an override is not a value. This was a real false positive on the
+     lint's first CI run, on a file the design system had just added. */
+  margin-block: 0 !important;
   padding: var(--spacing-md);
 }
 

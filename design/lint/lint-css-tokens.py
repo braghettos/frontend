@@ -50,17 +50,23 @@ def rule_font_size(path):
     return _scan(path, r'font-size:\s*([^;]+);', lambda v: 'var(' in v)
 
 
+# `!important` is an override, not a value — stripping it before the exemption check is what keeps
+# `margin: 0 !important` out of the results. It was a false positive on the first real CI run, on a
+# file this very design system had just added.
+IMPORTANT = re.compile(r'\s*!\s*important\s*$', re.I)
+
+
 def rule_spacing(path):
     """T4 — padding/margin resolve to --spacing-*. `0` and `auto` are not sizes."""
     return _scan(
         path, r'(?:padding|margin)[a-z-]*:\s*([^;]+);',
-        lambda v: 'var(' in v or v.strip() in ('0', 'auto', '0 auto'),
+        lambda v: 'var(' in v or IMPORTANT.sub('', v).strip() in ('0', 'auto', '0 auto'),
     )
 
 
 def rule_gap(path):
     """T4 — gap resolves to --spacing-*."""
-    return _scan(path, r'\bgap:\s*([^;]+);', lambda v: 'var(' in v or v.strip() == '0')
+    return _scan(path, r'\bgap:\s*([^;]+);', lambda v: 'var(' in v or IMPORTANT.sub('', v).strip() == '0')
 
 
 def rule_hex_literal(path):
