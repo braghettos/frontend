@@ -288,4 +288,38 @@
     :global(.ant-badge-status-dot) { background: var(--red-color); box-shadow: 0 0 5px 1px var(--red-color); }
     :global(.ant-badge-status-text) { color: var(--red-color); }
   }
+
+  /* GREEN MEANS HEALTHY — and until now it did not, in this one pipeline. Only `warning` and
+     `error` were re-tinted; `success` fell through to the base cyan above, so a CR setting
+     `extraStatus: 'success'` could never render green however it was authored. `processing`
+     deliberately keeps the cyan base (it is "in flight", not "healthy"). */
+  &:has(:global(.ant-badge-status-success)) {
+    background: color-mix(in srgb, var(--green-color) 8%, transparent);
+    border-color: color-mix(in srgb, var(--green-color) 30%, transparent);
+
+    :global(.ant-badge-status-dot) {
+      background: var(--green-color);
+      box-shadow: 0 0 5px 1px var(--green-color);
+    }
+
+    :global(.ant-badge-status-text) {
+      color: var(--green-color);
+    }
+  }
+
+  /* `default` is the absence of a status, so it reads as neutral rather than borrowing the
+     cyan that means "processing". */
+  &:has(:global(.ant-badge-status-default)) {
+    background: color-mix(in srgb, var(--gray-color) 8%, transparent);
+    border-color: color-mix(in srgb, var(--gray-color) 26%, transparent);
+
+    :global(.ant-badge-status-dot) {
+      background: var(--gray-color);
+      box-shadow: none;
+    }
+
+    :global(.ant-badge-status-text) {
+      color: var(--gray-color);
+    }
+  }
 }

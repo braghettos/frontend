@@ -27,7 +27,7 @@ export interface Table {
        */
       columns: {
         /**
-         * the color of the value (or the icon) to be represented
+         * the color of the value (or the icon) to be represented. These are KRATEO PALETTE names resolved through the shared palette — not antd presets. The same name on a Button takes antd's vocabulary instead and renders a different shade.
          */
         color?: 'blue' | 'darkBlue' | 'orange' | 'gray' | 'red' | 'green' | 'violet'
         /**

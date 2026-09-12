@@ -224,7 +224,7 @@ export interface Button {
         }[]
       }
       /**
-       * antd Button color (pair with `variant`)
+       * antd Button color (pair with `variant`). NOTE: these are antd's OWN presets, not the Krateo palette — `default`/`primary`/`danger` are not colours at all, and `green`/`blue`/`red`/`orange` render antd's shades, NOT the brand ones a Table column or a Tag would give for the same name. Krateo palette names (`darkBlue`, `gray`, `violet`) are not valid here.
        */
       color?:
         | 'default'

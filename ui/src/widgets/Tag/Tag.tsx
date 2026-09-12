@@ -23,7 +23,11 @@ const Tag = ({ uid, widgetData }: WidgetProps<TagWidgetData>) => {
   // status/category pills). Show it ONLY for coloured pills that DON'T set their own
   // fontSize: the sized delta pills ("5 new", "96%") carry a number, not a status, so a
   // dot there would be noise. The dot inherits the palette's ink colour.
-  const showDot = !!palette && !(style as CSSProperties | undefined)?.fontSize
+  // A dot with no label carries the meaning by COLOUR ALONE — invisible to a screen reader, and
+  // to a colourblind reader, and gone the moment the page is printed or screenshotted into a
+  // ticket. This is #82 §0.7's root cause: an unset annotation resolves `label` to '' and the
+  // widget rendered a bare coloured pill. Every state that matters has a word.
+  const showDot = !!palette && !!label && !(style as CSSProperties | undefined)?.fontSize
 
   return (
     <AntdTag key={uid} {...rest} style={tagStyle}>

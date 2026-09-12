@@ -51,7 +51,7 @@
                       },
                       "ops": {
                         "type": "array",
-                        "description": "ordered list of DISTINCT writes applied as ONE gated set (e.g. one Form submit creating a Role AND its RoleBinding): each op resolves its OWN resourceRefId (verb + path + payload base) and builds its OWN payload/payloadToOverride against the SAME submitted values. The whole set is gated behind ONE aggregated blast-radius confirm and dispatched sequentially with stop-on-first-error and per-item results (W0-4 applySet semantics). Mutually exclusive with fanOutPath; onEventNavigateTo is not supported on a multi-op action. The action's own top-level payload/payloadToOverride are IGNORED when ops is present and its top-level resourceRefId is ignored for dispatch (it must still name a valid resource ref — point it at the first op's)",
+                        "description": "ordered list of DISTINCT writes applied as ONE gated set (e.g. one Form submit creating a Role AND its RoleBinding): each op resolves its OWN resourceRefId (verb + path + payload base) and builds its OWN payload/payloadToOverride against the SAME submitted values. The whole set is gated behind ONE aggregated blast-radius confirm and dispatched sequentially with stop-on-first-error and per-item results (W0-4 applySet semantics). Mutually exclusive with fanOutPath; onEventNavigateTo is not supported on a multi-op action. The action's own top-level payload/payloadToOverride are IGNORED when ops is present and its top-level resourceRefId is ignored for dispatch (it must still name a valid resource ref \u2014 point it at the first op's)",
                         "items": {
                           "type": "object",
                           "additionalProperties": false,
@@ -370,7 +370,7 @@
               "additionalProperties": false
             },
             "color": {
-              "description": "antd Button color (pair with `variant`)",
+              "description": "antd Button color (pair with `variant`). NOTE: these are antd's OWN presets, not the Krateo palette \u2014 `default`/`primary`/`danger` are not colours at all, and `green`/`blue`/`red`/`orange` render antd's shades, NOT the brand ones a Table column or a Tag would give for the same name. Krateo palette names (`darkBlue`, `gray`, `violet`) are not valid here.",
               "type": "string",
               "enum": [
                 "default",
@@ -432,7 +432,7 @@
               "type": "string"
             },
             "iconColor": {
-              "description": "palette color name (e.g. green / orange / red / cyan) applied to the icon independently of the button color — e.g. a leading fa-circle status dot on a filter chip",
+              "description": "palette color name (e.g. green / orange / red / cyan) applied to the icon independently of the button color \u2014 e.g. a leading fa-circle status dot on a filter chip",
               "type": "string"
             },
             "shape": {

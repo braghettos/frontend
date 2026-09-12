@@ -406,7 +406,7 @@ spec:
                       description: the id of the action to be executed when the button is clicked
                       type: string
                     color:
-                      description: antd Button color (pair with `variant`)
+                      description: 'antd Button color (pair with `variant`). NOTE: these are antd''s OWN presets, not the Krateo palette — `default`/`primary`/`danger` are not colours at all, and `green`/`blue`/`red`/`orange` render antd''s shades, NOT the brand ones a Table column or a Tag would give for the same name. Krateo palette names (`darkBlue`, `gray`, `violet`) are not valid here.'
                       enum:
                         - default
                         - primary
