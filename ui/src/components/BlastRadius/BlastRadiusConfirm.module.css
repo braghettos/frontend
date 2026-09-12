@@ -15,7 +15,7 @@
   align-items: baseline;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .verb {
@@ -97,7 +97,7 @@
 .diffSide {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 .diffLabelBefore,
@@ -148,14 +148,14 @@
 .opRow {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--spacing-xxs);
 }
 
 .opHead {
   align-items: baseline;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .opIndex {
@@ -203,8 +203,8 @@
 /* #5 — the plain-language "what this write does" line (Create file … / Open PR …). More prominent
    than the raw .opPreview it replaces for the git-write kinds. */
 .opHuman {
-  font-size: 13px;
-  margin-top: 2px;
+  font-size: var(--krateo-text-body-sm);
+  margin-top: var(--spacing-xxs);
   opacity: 0.95;
   padding-left: 28px;
 }
@@ -236,8 +236,8 @@
   align-items: baseline;
   color: var(--text-color);
   display: flex;
-  font-size: 13px;
-  gap: 8px;
+  font-size: var(--krateo-text-body-sm);
+  gap: var(--spacing-sm);
   line-height: 1.45;
 }
 

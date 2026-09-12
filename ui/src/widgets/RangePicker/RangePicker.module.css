@@ -12,7 +12,7 @@
 
 .pill :global(.ant-picker-input) input {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--krateo-text-label-sm);
   color: var(--gray-color);
 }
 

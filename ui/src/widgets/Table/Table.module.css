@@ -11,7 +11,7 @@
   white-space: nowrap;
   /* Petrol: mono UPPERCASE column headers (instrument-panel telemetry labels). */
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--krateo-text-label-sm);
   font-weight: var(--font-weight-medium);
   letter-spacing: 0.08em;
   text-transform: uppercase;

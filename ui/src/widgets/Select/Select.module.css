@@ -15,7 +15,7 @@
 .checkOption {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .checkBox {
@@ -40,7 +40,7 @@
 
 .checkOptionLabel {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--krateo-text-caption);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -67,7 +67,7 @@
 /* ── the §02 switcher panel chrome (header → master row → [menu] → apply → footer) ── */
 .panelHead {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--krateo-text-label-sm);
   font-weight: var(--font-weight-medium);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -85,10 +85,10 @@
 .masterRow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   width: 100%;
   padding: 5px 12px;
-  margin-bottom: 4px;
+  margin-bottom: var(--spacing-xs);
   border: none;
   background: transparent;
   border-radius: 4px;
@@ -109,7 +109,7 @@
 .optionCount {
   margin-left: auto;
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--krateo-text-label-sm);
   color: var(--gray-color);
 }
 
@@ -126,11 +126,11 @@
 
 .panelFoot {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--krateo-text-label-xs);
   line-height: 1.55;
   color: var(--gray-color);
   padding: 8px 6px 2px;
-  margin-top: 4px;
+  margin-top: var(--spacing-xs);
   border-top: 1px solid var(--border-color);
 }
 
@@ -159,15 +159,15 @@
 .ptag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-xs);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--krateo-text-label-xs);
   color: var(--primary-color);
   background-color: color-mix(in srgb, var(--primary-color) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--primary-color) 32%, transparent);
   border-radius: 3px;
   padding: 1px 5px;
-  margin-inline-end: 4px;
+  margin-inline-end: var(--spacing-xs);
 }
 
 .ptagClose {
