@@ -206,8 +206,6 @@ spec:
                       description: the page title (H1). The one required field — a page header without a title is not a page header
                       type: string
                   required:
-                    - allowedResources
-                    - items
                     - title
                   type: object
                 widgetDataTemplate:

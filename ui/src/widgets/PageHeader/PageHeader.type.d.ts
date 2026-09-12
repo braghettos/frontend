@@ -40,11 +40,11 @@ export interface PageHeader {
       /**
        * the list of resources that are allowed to be children of this widget or referenced by it
        */
-      allowedResources: ('buttons' | 'buttongroups' | 'flexes')[]
+      allowedResources?: ('buttons' | 'buttongroups' | 'flexes')[]
       /**
        * the page's actions, rendered right-aligned on the title line. At most one should be `type: primary`
        */
-      items: {
+      items?: {
         resourceRefId: string
       }[]
     }
