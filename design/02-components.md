@@ -42,7 +42,9 @@ Worth stating because of what follows: the ring is **not** broken. It applies to
 
 ### C5 — `PageHeader` — eyebrow, title, counter, tags, actions, subtitle, in one place.
 
-**Status:** missing
+**Status:** missing → **built, not yet adopted**
+
+> **Built** (#198). The widget ships with `pageheaders` in the Flex/Row/Col enums and its CRD generated. **Adoption is the remaining work**: 46 hand-rolled header CRs across ~12 chart pages collapse to about 14. That is gated on a frontend release — a chart CR referencing `kind: PageHeader` needs the CRD on the cluster first.
 
 Its absence is named as the reason a finding could not be fixed centrally: *“no dedicated page-header component exists to point to.”* Most of the Layer 3 page rules exist because this does not.
 
@@ -64,7 +66,9 @@ This is worth separating from a legitimate difference. Those two pages’ *bodie
 
 ### C6 — `TitleLine` — title and status tag on one baseline-centred row.
 
-**Status:** missing
+**Status:** missing → **partly covered**
+
+> `PageHeader` (C5) now carries the title/counter/tags row for PAGE headers, which is where four of the five original findings were. A standalone `TitleLine` is still missing for the same pattern inside a panel or card — lower urgency, same defect class.
 
 Re-filed on four pages across five findings. #86 §0.6 notes a shipped fix *targeted the wrong layer* — because with no component, there is no right layer to target.
 
@@ -82,7 +86,9 @@ Today: a custom button, an antd circle button, and an antd circle button wrapped
 
 ### C8 — A clickable row is keyboard-operable: focusable, announced, and activated by Enter and Space.
 
-**Status:** gap
+**Status:** gap → **fixed**
+
+> **Fixed** (#200). One shared `rowNavProps` helper across the default row, tree row, card tile and rich row, plus the notification rows. A correction from doing it: the audit reported FIVE navigable shapes — the fifth is already an antd `Button` and carries this natively. Four were real.
 
 `Table` fixed exactly this and left the standard in a comment; `Table.a11y.test.tsx` quotes WCAG 2.1.1. `ListView` reproduces the original bug across **five navigable shapes** — including the Marketplace card grid — plus the notification drawer rows: `onClick` and `cursor: pointer` with no `tabIndex`, `role` or `onKeyDown`.
 
@@ -144,7 +150,9 @@ The same field’s enum also unions two incompatible vocabularies — antd-nativ
 
 ### C14 — Empty states route through the shared `WidgetEmpty`.
 
-**Status:** gap
+**Status:** gap → **fixed**
+
+> **Fixed** (#203). `Tabs`, `BarChart`, `PieChart`, `LineChart` and `FlowChart` now route through `WidgetEmpty`, each with copy naming what is missing rather than showing a bare icon.
 
 Five of six collection widgets — `Tabs`, `BarChart`, `PieChart`, `LineChart`, `FlowChart` — hand-roll their own `<Empty>`, so none gets the shared wrapper or a widget-specific description, and a future change to the empty treatment reaches none of them.
 
@@ -152,7 +160,9 @@ Five of six collection widgets — `Tabs`, `BarChart`, `PieChart`, `LineChart`, 
 
 ### C15 — `Table` has an empty-state contract at all.
 
-**Status:** gap
+**Status:** gap → **fixed**
+
+> **Fixed** (#203) via `locale.emptyText`. `hideWhenEmpty` — which `List` has and `Table` does not — is deliberately still absent: it is a new schema field, so it needs the CRD and chart to move with it. This was the rendering contract only.
 
 `hideWhenEmpty` is `List`-only. `Table` passes a possibly-empty `dataSource` straight to antd with no length check and no `WidgetEmpty` — so a table backed by a zero-row action cannot be configured to suppress itself, and its empty rendering is antd’s unstyled default. Extends #72 §0.6.
 

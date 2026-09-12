@@ -97,7 +97,9 @@ Two consequences worth deciding on rather than inheriting:
 
 ### T9 — A looping animation respects `prefers-reduced-motion`.
 
-**Status:** inconsistent
+**Status:** inconsistent → **fixed**
+
+> **Fixed** (#205). `FreshnessBadge`'s two pulses — the only unguarded infinite animations in the codebase — now stop under `prefers-reduced-motion`. The dot stays visible: the state is in the hue, not the motion. The rule now gates at zero in `lint-css-tokens`.
 
 Not absent — *inconsistent*. The voice UI guards both its animations correctly and substitutes a static state. `FreshnessBadge`’s genuinely infinite opacity pulse has no guard at all, and it renders on the “refreshing” and “live” states.
 

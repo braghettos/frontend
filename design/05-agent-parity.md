@@ -67,6 +67,8 @@ Page context is **not** passed by the entry point. It is snapshotted from the li
 **Status:** gap → **resolved**
 
 > **Corrected, then resolved.** This rule recorded FOUR label variants on medium confidence. Measured against the chart there were **three** across six CTAs — “Ask Autopilot →”, “Investigate with Autopilot”, “Diagnose with Autopilot”. “Troubleshoot with Autopilot” does not exist.
+
+> **And then it drifted again, within the same merge window.** A seventh CTA landed labelled "Author with Autopilot" — a fourth variant, authored before the decision and merged alongside the fix (portal#152 corrected it). Worth keeping because of WHY the sweep missed it: it matched Buttons containing a literal `ask=`, and this one gets its deep link from the RESTAction via `askHref` in a widgetDataTemplate. **A pattern-based sweep finds the shape it was written for, not the capability** — which is the argument for checking what a CR *does*, in the lint, rather than what it contains.
 >
 > All six now read **“Ask Autopilot”** (krateo-platformops/portal#151): it describes what the *button* does, where the other two described what the page was about.
 >
@@ -88,7 +90,9 @@ On primacy: it is **not** special-cased. It takes `primary` under the same rule 
 
 ### A6 — A declared verb that always no-ops must be implemented or removed.
 
-**Status:** gap
+**Status:** gap → **decided**
+
+> **Decided, and the underlying defect fixed** (#204). The stubs STAY declared: removing them changes nothing, because an unregistered verb returns null too — so the real defect was the silence, not the declaration. And they must NOT be implemented: the drawer capability is already reachable via `runAction` against a shipped Button, so a dedicated verb would let the agent open a drawer for a ref no button exposes — creating a Layer 5 gap rather than closing one. `refused()` in `actionBridge` now turns every null into a chip naming the verb, which covers unknown verbs, failed schemas and unmounted controls alike.
 
 `openDrawer` and `openModal` are registered as read verbs whose apply always resolves null. The UI supports both natively — this is the inverse gap, and it is worse than an absent verb, because the model is taught a capability that silently does nothing.
 
@@ -104,7 +108,9 @@ It sits outside any page-content subtree, placed last behind a divider, in brand
 
 ### A8 — The agent’s activity state is visible wherever the agent is.
 
-**Status:** open
+**Status:** open → **fixed**
+
+> **Fixed** (#204). The header toggle consumes `streaming` and shows the reserved agent-signal token, with `aria-busy` for screen readers. STATIC, not blinking: the rail's caret blinks because it sits at the end of streaming text where motion reads as "more is coming", but a permanent blink in the page header is the looping animation G13 rules out.
 
 Found independently by two audits. The in-rail caret correctly uses the reserved agent-signal token, guarded by three separate comments against reuse. The header toggle — the one permanently-visible entry point — never consumes `streaming` at all, so it cannot show that a turn is in flight.
 
