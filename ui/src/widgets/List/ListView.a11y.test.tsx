@@ -13,6 +13,7 @@
  */
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { App } from 'antd'
+import type * as ReactRouter from 'react-router'
 import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -29,7 +30,7 @@ vi.stubGlobal('matchMedia', (query: string) => ({
 
 const navigateSpy = vi.fn()
 vi.mock('react-router', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('react-router')>()),
+  ...(await importOriginal<typeof ReactRouter>()),
   useNavigate: () => navigateSpy,
 }))
 
@@ -54,7 +55,10 @@ const renderList = (navigateTo?: string) => render(
 const firstRow = (container: HTMLElement) => container.querySelector('.ant-list-item')
 
 describe('ListView — clickable rows are keyboard-operable', () => {
-  afterEach(() => { cleanup(); navigateSpy.mockClear() })
+  afterEach(() => {
+    cleanup()
+    navigateSpy.mockClear()
+  })
 
   it('a navigating row is focusable and announced as a control', () => {
     const { container } = renderList('/compositions/ns/name')
