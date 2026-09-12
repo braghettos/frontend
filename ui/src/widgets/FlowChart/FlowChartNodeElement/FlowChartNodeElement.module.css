@@ -27,7 +27,7 @@
 
   .subHeader {
     color: $primary-color;
-    font-size: 12px;
+    font-size: var(--krateo-text-caption);
     padding: 0 10px;
     text-transform: uppercase;
   }

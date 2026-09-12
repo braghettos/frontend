@@ -37,7 +37,7 @@
      above the H1, replacing the separate eyebrow widget. */
   color: var(--gray-color);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--krateo-text-label-sm);
   font-weight: var(--font-weight-medium);
   letter-spacing: 0.08em;
   text-transform: uppercase;

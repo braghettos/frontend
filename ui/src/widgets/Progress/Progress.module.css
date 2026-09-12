@@ -10,13 +10,13 @@
    description is muted graphite. Both mono, matching the flight-deck telemetry voice. */
 .label {
   font-family: var(--font-mono);
-  font-size: 12px;
-  margin-top: 6px;
+  font-size: var(--krateo-text-caption);
+  margin-top: var(--spacing-xsm);
 }
 
 .description {
   color: var(--gray-color);
   font-family: var(--font-mono);
-  font-size: 10.5px;
-  margin-top: 2px;
+  font-size: var(--krateo-text-label-sm);
+  margin-top: var(--spacing-xxs);
 }

@@ -136,7 +136,7 @@
 .siderBuild {
   color: color-mix(in srgb, var(--text-color) 50%, transparent);
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--krateo-text-label-sm);
   letter-spacing: 0.04em;
   overflow: hidden;
   text-overflow: ellipsis;

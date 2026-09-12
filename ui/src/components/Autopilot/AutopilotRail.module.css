@@ -153,7 +153,7 @@
      docked rail reads as part of the same drawer-chrome family as the three overlay Drawers. */
   font-size: var(--font-size-sm);
   font-weight: 600;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .apSpark {
@@ -169,7 +169,7 @@
   color: var(--cyan-color);
   display: inline-flex;
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: var(--krateo-text-label-xs);
   gap: 5px;
   letter-spacing: 0.06em;
   padding: 1px 6px;
@@ -278,7 +278,7 @@
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   display: flex;
-  gap: 6px;
+  gap: var(--spacing-xsm);
   margin: 0 6px 8px;
   padding: 5px 7px;
 }
@@ -298,7 +298,7 @@
   color: var(--dark-color);
   flex: 1;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--krateo-text-label-sm);
   min-width: 0;
   outline: none;
 }
@@ -310,13 +310,13 @@
 .apHistoryList {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--spacing-xxs);
 }
 
 .apHistoryHead {
   color: var(--gray-color);
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: var(--krateo-text-label-xs);
   letter-spacing: 0.06em;
   padding: 2px 6px 8px;
   text-transform: uppercase;
@@ -324,7 +324,7 @@
 
 .apHistoryEmpty {
   color: var(--gray-color);
-  font-size: 12px;
+  font-size: var(--krateo-text-caption);
   line-height: 1.5;
   padding: 4px 6px 8px;
 }
@@ -336,7 +336,7 @@
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--spacing-xxs);
   padding: 7px 8px;
   text-align: left;
   width: 100%;
@@ -362,7 +362,7 @@
 .apHistoryMeta {
   color: var(--gray-color);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--krateo-text-label-xs);
 }
 
 /* "viewing a past session" hint (deferred live-resume is honest, not hidden). */
@@ -396,7 +396,7 @@
   color: var(--gray-color);
   display: flex;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--krateo-text-label-xs);
   gap: 7px;
   padding: 6px 9px;
 }
@@ -440,7 +440,7 @@
   border-radius: 3px;
   color: var(--cyan-color);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--krateo-text-label-sm);
   padding: 1px 5px;
 }
 
@@ -471,7 +471,7 @@
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--krateo-text-label-sm);
   margin: 6px 0;
   overflow-x: auto;
   padding: 8px 10px;
@@ -493,7 +493,7 @@
   background: var(--krateo-color-agent-signal-fill);
   display: inline-block;
   height: 13px;
-  margin-left: 2px;
+  margin-left: var(--spacing-xxs);
   vertical-align: text-bottom;
   width: 7px;
 }
@@ -513,8 +513,8 @@
   color: var(--gray-color);
   display: flex;
   font-family: var(--font-mono);
-  font-size: 11px;
-  gap: 8px;
+  font-size: var(--krateo-text-label-sm);
+  gap: var(--spacing-sm);
   padding: 7px 9px;
 }
 
@@ -548,14 +548,14 @@
   border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-sm);
   padding: 10px;
 }
 
 .apApprovalHead {
   align-items: center;
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 /* Mirrors BlastRadiusConfirm .verb — the chip naming the gate. */
@@ -565,7 +565,7 @@
   border-radius: var(--radius-sm);
   color: var(--amber-color);
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: var(--krateo-text-label-xs);
   font-weight: 600;
   letter-spacing: 0.04em;
   padding: 2px 8px;
@@ -574,19 +574,19 @@
 
 .apApprovalIntent {
   color: var(--gray-color);
-  font-size: 11px;
+  font-size: var(--krateo-text-label-sm);
 }
 
 .apApprovalReq {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 .apApprovalTool {
   align-items: baseline;
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .apApprovalToolName {
@@ -599,7 +599,7 @@
 .apApprovalAgent {
   color: var(--gray-color);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--krateo-text-label-xs);
 }
 
 /* Mirrors BlastRadiusConfirm .code — the mono args/manifest block the human reads. */
@@ -609,7 +609,7 @@
   border-radius: var(--radius-sm);
   color: var(--dark-color);
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--krateo-text-label-sm);
   line-height: 1.5;
   margin: 0;
   max-height: 200px;
@@ -621,7 +621,7 @@
 
 .apApprovalBtns {
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .apBtnApprove {
@@ -632,7 +632,7 @@
   cursor: pointer;
   flex: 1;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--krateo-text-label-sm);
   font-weight: 600;
   height: 28px;
   letter-spacing: 0.03em;
@@ -650,7 +650,7 @@
   cursor: pointer;
   flex: 1;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--krateo-text-label-sm);
   height: 28px;
 }
 
@@ -662,14 +662,14 @@
 .apApprovalNote {
   color: var(--gray-color);
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: var(--krateo-text-label-xs);
 }
 
 /* suggested next steps */
 .apSuggest {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--spacing-xsm);
 }
 
 .apSg {
@@ -681,7 +681,7 @@
   cursor: pointer;
   display: inline-flex;
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--krateo-text-label-sm);
   height: 24px;
   padding: 0 9px;
 }
@@ -705,7 +705,7 @@
   color: var(--dark-color);
   font-family: var(--font-display);
   font-size: 19px;
-  margin-bottom: 12px;
+  margin-bottom: var(--spacing-smd);
 }
 
 /* The starter-prompt row (unlike the per-turn .apSuggest, which follows a message and stays
@@ -730,7 +730,7 @@
   border: 1px solid var(--border-color);
   border-radius: 9px;
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-sm);
   padding: 8px 10px;
 }
 
@@ -780,8 +780,8 @@
   color: var(--gray-color);
   display: flex;
   font-family: var(--font-mono);
-  font-size: 9.5px;
-  gap: 6px;
+  font-size: var(--krateo-text-label-xs);
+  gap: var(--spacing-xsm);
   margin-top: 7px;
 }
 
@@ -798,8 +798,8 @@
   color: var(--gray-color);
   display: flex;
   font-family: var(--font-mono);
-  font-size: 9.5px;
-  gap: 6px;
+  font-size: var(--krateo-text-label-xs);
+  gap: var(--spacing-xsm);
   justify-content: space-between;
   margin-bottom: 7px;
 }
@@ -807,7 +807,7 @@
 .apOasError {
   color: var(--magenta-color);
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: var(--krateo-text-label-xs);
   margin-bottom: 7px;
 }
 
@@ -822,7 +822,7 @@
   cursor: pointer;
   display: flex;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--krateo-text-label-xs);
   gap: 5px;
   letter-spacing: 0.04em;
   padding: 4px 0 0;
@@ -839,7 +839,7 @@
   flex-direction: column;
   gap: 5px;
   margin-top: 5px;
-  padding-left: 8px;
+  padding-left: var(--spacing-sm);
 }
 
 .apEvHead {
@@ -847,8 +847,8 @@
   color: var(--dark-color);
   display: flex;
   font-family: var(--font-mono);
-  font-size: 10px;
-  gap: 8px;
+  font-size: var(--krateo-text-label-xs);
+  gap: var(--spacing-sm);
   justify-content: space-between;
 }
 
@@ -861,8 +861,8 @@
   display: inline-flex;
   flex: none;
   font-family: var(--font-mono);
-  font-size: 10px;
-  gap: 4px;
+  font-size: var(--krateo-text-label-xs);
+  gap: var(--spacing-xs);
   padding: 0;
 }
 
@@ -878,7 +878,7 @@
   display: flex;
   flex-direction: column;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--krateo-text-label-xs);
   gap: 1px;
   line-height: 1.45;
   padding: 0;
@@ -893,7 +893,7 @@
 .apEvMeta {
   color: var(--gray-color);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--krateo-text-label-xs);
 }
 
 .apEvLink {
@@ -908,7 +908,7 @@
 .apEvGroup {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 .apEvGroup > .apEvRow {
@@ -919,9 +919,9 @@
   border-left: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-left: 4px;
-  padding-left: 8px;
+  gap: var(--spacing-xs);
+  margin-left: var(--spacing-xs);
+  padding-left: var(--spacing-sm);
 }
 
 /* ── speak-back (voice spec §3): the chrome for an answer being READ ALOUD. Colours are
@@ -951,8 +951,8 @@
   border-radius: var(--radius-md);
   color: var(--gray-color);
   display: flex;
-  font-size: 11px;
-  gap: 8px;
+  font-size: var(--krateo-text-label-sm);
+  gap: var(--spacing-sm);
   line-height: 1.5;
   margin-bottom: 7px;
   padding: 5px 8px;
@@ -976,7 +976,7 @@
   border-radius: var(--radius-sm);
   color: var(--cyan-color);
   cursor: pointer;
-  font-size: 10.5px;
+  font-size: var(--krateo-text-label-sm);
   margin-left: auto;
   padding: 2px 8px;
   white-space: nowrap;
@@ -1066,8 +1066,8 @@
   border-radius: var(--radius-md);
   color: var(--gray-color);
   display: flex;
-  font-size: 11px;
-  gap: 8px;
+  font-size: var(--krateo-text-label-sm);
+  gap: var(--spacing-sm);
   line-height: 1.5;
   margin-bottom: 7px;
   padding: 5px 8px;
@@ -1077,7 +1077,7 @@
   color: var(--primary-color);
   flex: none;
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: var(--krateo-text-label-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -1086,7 +1086,7 @@
   color: var(--gray-color);
   flex: none;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--krateo-text-label-xs);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1116,7 +1116,7 @@
   color: var(--primary-color);
   cursor: pointer;
   flex: none;
-  font-size: 10.5px;
+  font-size: var(--krateo-text-label-sm);
   padding: 2px 8px;
   white-space: nowrap;
 }
@@ -1130,7 +1130,7 @@
 .apVoiceError,
 .apVoiceInfo {
   border-radius: var(--radius-md);
-  font-size: 11px;
+  font-size: var(--krateo-text-label-sm);
   line-height: 1.5;
   margin-bottom: 7px;
   padding: 5px 8px;

@@ -2,7 +2,7 @@
 .apToggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--spacing-xsm);
   height: 30px;
   padding: 0 10px;
   border-radius: var(--radius-md);
@@ -50,7 +50,7 @@
   color: inherit;
   flex-shrink: 0;
   font-family: inherit;
-  font-size: 9.5px;
+  font-size: var(--krateo-text-label-xs);
   line-height: 1.6;
   padding: 0 5px;
 }

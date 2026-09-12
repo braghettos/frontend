@@ -1,7 +1,7 @@
 .body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--spacing-md);
 }
 
 .yaml {
@@ -28,13 +28,13 @@
 .headline {
   align-items: center;
   display: inline-flex;
-  gap: 6px;
+  gap: var(--spacing-xsm);
 }
 
 .summary {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--spacing-xsm);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -51,22 +51,22 @@
 .issueList {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-xs);
   margin: 0;
   overflow-wrap: anywhere;
-  padding-left: 16px;
+  padding-left: var(--spacing-md);
 }
 
 /* Unified preview: the "Files" tab (one committed file per block) + its destination-path header. */
 .file {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 12px;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-smd);
 }
 
 .filePath {
-  font-size: 12px;
+  font-size: var(--krateo-text-caption);
   opacity: 0.85;
 }
 
@@ -74,7 +74,7 @@
 .fileHead {
   align-items: baseline;
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-sm);
   justify-content: space-between;
 }
 
@@ -83,7 +83,7 @@
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--spacing-xsm);
   margin-bottom: 10px;
 }
 
@@ -91,21 +91,21 @@
 .edit {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .editHead {
   align-items: baseline;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--spacing-xsm);
 }
 
 /* The source editor: a monospaced code surface matching the read-only YAML view above.
    The dark variant re-bases the antd TextArea onto the theme surface so the two modes cohere. */
 .edit :global(textarea) {
   font-family: var(--font-mono, monospace);
-  font-size: 12px;
+  font-size: var(--krateo-text-caption);
 }
 
 .editAreaDark {

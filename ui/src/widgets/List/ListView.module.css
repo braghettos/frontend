@@ -13,7 +13,7 @@
   display: inline-block;
   flex-shrink: 0;
   height: 10px;
-  margin-top: 6px;
+  margin-top: var(--spacing-xsm);
   width: 10px;
 }
 
@@ -33,7 +33,7 @@
    color — mirrors the mockup `.rstate` (cyan plain text, not a heavy pill). */
 .stateText {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--krateo-text-label-sm);
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
@@ -55,7 +55,7 @@
   color: var(--gray-color);
   display: inline-block;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--krateo-text-label-sm);
   padding: 0 6px;
 }
 
@@ -150,7 +150,7 @@
   display: flex;
   font-family: var(--font-mono);
   font-size: 11.5px;
-  gap: 8px;
+  gap: var(--spacing-sm);
   padding: 6px 2px !important;
 }
 
@@ -180,7 +180,7 @@
 
 .treeState {
   flex: none;
-  font-size: 10.5px;
+  font-size: var(--krateo-text-label-sm);
   letter-spacing: 0.02em;
   margin-left: auto;
   white-space: nowrap;
@@ -231,7 +231,7 @@
   flex-direction: column;
   /* a touch more air so the category tag + version badge read as their own line under the
      name rather than crowding it (issue #75 §0.3). */
-  gap: 6px;
+  gap: var(--spacing-xsm);
   min-width: 0;
 }
 
@@ -240,7 +240,7 @@
 .cardStatus {
   align-self: flex-start;
   flex-shrink: 0;
-  font-size: 15px;
+  font-size: var(--krateo-text-body);
   line-height: 1.5;
   margin-left: var(--spacing-sm, 8px);
 }
@@ -251,7 +251,7 @@
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--spacing-xsm);
   min-width: 0;
 }
 
@@ -272,7 +272,7 @@
   color: var(--gray-color);
   flex: none;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--krateo-text-label-sm);
   padding: 0 6px;
   white-space: nowrap;
 }
@@ -310,7 +310,7 @@
 .cardProvider {
   color: var(--gray-color);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--krateo-text-label-sm);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -329,7 +329,7 @@
   color: var(--primary-color);
   display: inline-flex;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--krateo-text-caption);
   font-weight: var(--font-weight-medium);
   gap: 5px;
   white-space: nowrap;
@@ -349,7 +349,7 @@
 .chipList :global(.ant-list-items) {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .chipList :global(.ant-list-item) {
@@ -361,6 +361,6 @@
 .chipCount {
   font-size: 0.85em;
   font-variant-numeric: tabular-nums;
-  margin-inline-start: 6px;
+  margin-inline-start: var(--spacing-xsm);
   opacity: 0.6;
 }

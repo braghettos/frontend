@@ -114,8 +114,8 @@
      Horizontal padding is left at antd's default; other Card consumers (marketplace,
      detail, chart, activity cards) don't get .statCard so they're unchanged. */
   &.statCard :global(.ant-card-body) {
-    padding-top: 12px;
-    padding-bottom: 12px;
+    padding-top: var(--spacing-smd);
+    padding-bottom: var(--spacing-smd);
   }
 
   .header {
@@ -126,7 +126,7 @@
   .title {
     align-items: center;
     display: flex;
-    font-size: 15px;
+    font-size: var(--krateo-text-body);
     font-weight: var(--font-weight-bold);
     gap: var(--spacing-sm);
     min-width: 0;
@@ -137,7 +137,7 @@
        'heading' variant keeps the 15px bold readable title (marketplace tiles,
        detail headers). The Live badge keeps its own sizing. */
     &.eyebrow {
-      font-size: 11px;
+      font-size: var(--krateo-text-label-sm);
 
       .text {
         color: var(--gray-color);
@@ -185,7 +185,7 @@
       :global(.ant-badge-status-text) {
         color: var(--cyan-color);
         font-family: var(--font-mono);
-        font-size: 9.5px;
+        font-size: var(--krateo-text-label-xs);
         letter-spacing: 0.06em;
         margin-inline-start: 5px;
         text-transform: uppercase;
@@ -200,7 +200,7 @@
     align-items: center;
     border-radius: var(--radius-md);
     display: flex;
-    font-size: 15px;
+    font-size: var(--krateo-text-body);
     height: 34px;
     justify-content: center;
     position: absolute;
@@ -231,8 +231,8 @@
   color: var(--gray-color);
   display: inline-flex;
   font-family: var(--font-mono);
-  font-size: 10.5px;
-  gap: 6px;
+  font-size: var(--krateo-text-label-sm);
+  gap: var(--spacing-xsm);
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
@@ -267,7 +267,7 @@
   :global(.ant-badge-status-text) {
     color: var(--cyan-color);
     font-family: var(--font-mono);
-    font-size: 9.5px;
+    font-size: var(--krateo-text-label-xs);
     letter-spacing: 0.06em;
     margin-inline-start: 5px;
     text-transform: uppercase;
