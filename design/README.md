@@ -65,18 +65,34 @@ enforcement notes on each layer are for, and it is the standard this document sh
 
 Two things retire the most recurrence per unit of work:
 
-1. **Adopt `PageHeader` (C5).** The component is built; adopting it collapses 46 hand-rolled header
-   CRs to about 14 across roughly a dozen pages. Six composition rules stop being rules you must
-   remember and become defaults you cannot get wrong. It is also the fix for the most visible
-   inconsistency in the product: two pages about operational events build the same chrome from
-   different primitives under three different names.
-2. **The token-adoption sweep (T3, T4)** — *after* a CSS lint exists. The scale decision is made
-   (canonical `--krateo-text-*` in, legacy `--font-size-*` out), so the ~140 declarations are
-   mechanical; doing them before the lint is churn that re-drifts.
+1. **Adopt `PageHeader` (C5).** The component is built and merged; adopting it collapses 46
+   hand-rolled header CRs to about 14 across roughly a dozen chart pages. Six composition rules stop
+   being rules you must remember and become defaults you cannot get wrong. It is also the fix for
+   the most visible inconsistency in the product: two pages about operational events build the same
+   chrome from different primitives under three different names.
+   **Gated on a frontend release** — a chart CR referencing `kind: PageHeader` needs the CRD on the
+   cluster first.
+2. **Add the missing scale steps, then sweep (T3, T4).** The lint now exists, so the sweep can run
+   file by file against its baseline instead of as one large untestable diff. But [the audit](01-tokens.md)
+   found most hardcoded values have no token to move *to*: two label sizes and roughly three spacing
+   steps have to be **added first**, and choosing them is a design decision rather than a mechanical
+   one. After that ~91 declarations are mechanical and the rest needs eyes.
 
 **Not on this list any more:** X2's RBAC residual. A denial reading as absence is now a
 [decided position](04-silent-failures.md), not a gap — announcing hidden items would leak the
 existence and count of resources outside a tenant's scope.
+
+## What is enforced today
+
+Two lints run from [`lint/`](lint/), and between them they hold seven composition rules and six
+token rules. Everything else is a rule a human applies.
+
+- `lint-portal-consistency.py` — composition, run against a chart's widget CRs. **0 violations**
+  against the portal chart.
+- `lint-css-tokens.py` — token adoption in this repo's stylesheets. Gates on a **baseline** of 314
+  pre-existing violations, so new code is held to the rule while the debt burns down.
+
+Neither is wired into CI yet. Until they are, this document is still the thing it warns about.
 
 ## How rules are marked
 
