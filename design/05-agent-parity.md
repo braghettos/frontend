@@ -1,0 +1,223 @@
+# Layer 5 — Agent parity
+
+The invariant: **anything Autopilot can do, a user must be able to do without it**, through ordinary buttons and forms. Autopilot may be faster; it must not be the only route.
+
+Like Layer 4, this is a class rather than a location, and it is violated by omission — you cannot see it on a page, only by diffing two inventories. Unlike Layer 4, it cannot be checked from the frontend repo alone: it needs the chart, where the shipped pages live.
+
+## Where the invariant stands — measured against the shipped chart
+
+The first pass could only measure Autopilot's side. This one diffed it against **612 widget CRs on the portal chart's `origin/main`**, with every contested row handed to an adversarial verifier told to break it. The prior verdict did not survive.
+
+| Verb | Verdict | Shipped UI route |
+|---|---|---|
+| navigate | PARITY | Autopilot validates against the portal's own route table, so it is a strict subset of what a click reaches |
+| runAction | PARITY | By construction — and it *forces* confirmation on mutating verbs, stricter than the chart's own buttons |
+| prefillForm | PARITY | All 11 shipped Forms; Autopilot never submits |
+| openDrawer · explainUpgradeImpact | PARITY | Shipped drawer buttons; upgrade-impact reachable from the blueprint detail page |
+| **patchField** | PARTIAL | **The GAP verdict falls.** `button.composition-detail-edit` → `form.composition-edit` merge-PATCH, reachable sidebar → table row → detail → Edit, no Autopilot in the path |
+| **applyResourceSet** | PARTIAL | Narrows. `form.fleet-rollout` (`fanOutPath` → N ordered writes) and `form.access-grant` (`ops[]`, 2 writes) ship |
+| setExtras · describeResource | PARTIAL | Each whitelisted key has a control — but not on every page that honours it |
+| **publishBlueprint · publishPage · publishRestDef** | GAP | **0 of 612 CRs** write `gitrefs`, `repocontents` or `pullrequests`. The three builder pages ship zero write widgets — their only CTA is a navigate into Autopilot |
+| the preview family | by design | Tooling that grounds the model's own generation |
+
+**The breach is not where the first audit put it.** Both mutating verbs it called outright gaps have ordinary shipped routes — and the composition Edit drawer is *strictly more powerful* than `patchField`, reaching nested paths and many keys in one PATCH where the verb takes a single bare key. The real breach is structural and sits one level up: **the three builder pages are Autopilot-only by construction.**
+
+> **A conditional the audit nearly missed**
+>
+> An adversarial verifier refuted the publish GAP, finding that `builder-publish` ships as an ordinary blueprint — so instantiating it from `/blueprints` POSTs the same `BuilderPublish` claim the rail emits. That route is real, and it is **not the one in use**: it is live only when `AUTOPILOT_PUBLISH_VIA_GIT_PROVIDER` is `true`, and the chart sets it nowhere. The code comment says why — *“legacy github path, so existing installs are byte-identical. Flip on once git-provider + the builder-publish composition are deployed.”*
+>
+> So the GAP stands for what is deployed, and there is a latent route behind a flag. Worth knowing before anyone builds a publish UI that already half-exists.
+
+### A1 — Every capability Autopilot can reach has a route a user can reach without it.
+
+**Status:** breached
+
+Measured: the invariant holds for navigation, action-driving, form filling and both contested mutating verbs. It is breached for **publishing** — and breached structurally rather than by oversight. The three builder pages ship *zero* write widgets; their only call to action is a navigate into the rail. Autopilot is not a faster path to publishing, it is the only path.
+
+The distinction the first audit drew still holds and is worth keeping: every individual Autopilot write routes through the identical confirm, blast-radius and provenance fabric a Button click uses.
+
+> The **safety** invariant holds everywhere. The **capability** invariant is breached in exactly one place — and it is a whole product surface, not a verb.
+>
+> — *the measured result*
+
+*Evidence: census of 612 CRs: 22 mutating verbs across 20 files, none writing a publish artifact · 37 Buttons, 11 Forms, all examined*
+
+### A2 — A mutating verb with no UI equivalent is named as a first-class exception — never filed under “minor preview verbs”.
+
+**Status:** documentation
+
+The prior working assumption was that only the three AI-authoring builders were Autopilot-exclusive, plus some minor preview verbs. Directionally right, wrong where it counts: it filed the two *mutating* gaps under “minor”. The mechanism is safe; the claim about it was not accurate.
+
+Enforcement: CI fails when a new write verb is added without an explicit “has a UI equivalent” annotation.
+
+*Evidence: this audit, Task C*
+
+### A3 — An Autopilot entry point is a plain Button wired to `navigate` → `?ask=<prompt>`.
+
+**Status:** holds
+
+Autopilot must never require a bespoke widget or private API to be invoked from a page — and it doesn’t. The deep link opens the rail and seeds one turn; the mechanism is a URL convention a CR author wires like any other button.
+
+Page context is **not** passed by the entry point. It is snapshotted from the live widget cache at send time regardless of how the turn started, so an entry point’s only job is to supply prompt text.
+
+*Evidence: verified `askDeepLink.ts` · `useAutopilotContext.ts:1-10`*
+
+### A4 — One canonical label for “open Autopilot with a seeded prompt”.
+
+**Status:** gap
+
+Four variants for the same mechanism: *“Ask Autopilot →”* (builder pages), *“Investigate with Autopilot”* (alert detail), *“Diagnose”* (composition detail), *“Troubleshoot with Autopilot”* (observability).
+
+*Evidence: #84 §0.1 · #83 §0.8 · #86 §0.9 · `askDeepLink.ts:3-4`*
+
+### A5 — The CTA is scoped to the smallest container it is actually about, right-aligned within it, and competes for that container’s one primary slot.
+
+**Status:** CR
+
+A panel when it acts on that panel’s content; the page, in its own right-aligned row, when Autopilot is the page’s whole workflow. Never a bare item in a page’s top-level stack.
+
+On primacy: it is **not** special-cased. It takes `primary` under the same rule any other single-action container does, and drops to secondary if the container gains a competing primary. This is P6 as rescoped, with no Autopilot carve-out.
+
+*Evidence: #83 §0.8 → #86 §0.9 — the same bug pattern corrected twice, on two pages*
+
+### A6 — A declared verb that always no-ops must be implemented or removed.
+
+**Status:** gap
+
+`openDrawer` and `openModal` are registered as read verbs whose apply always resolves null. The UI supports both natively — this is the inverse gap, and it is worse than an absent verb, because the model is taught a capability that silently does nothing.
+
+*Evidence: verified `verbRegistry.ts:129-141`*
+
+### A7 — The header toggle is chrome, and never counts against a page’s primary-action budget.
+
+**Status:** holds
+
+It sits outside any page-content subtree, placed last behind a divider, in brand primary rather than the warning token it once borrowed.
+
+*Evidence: #56 — verified `Shell.tsx:36`*
+
+### A8 — The agent’s activity state is visible wherever the agent is.
+
+**Status:** open
+
+Found independently by two audits. The in-rail caret correctly uses the reserved agent-signal token, guarded by three separate comments against reuse. The header toggle — the one permanently-visible entry point — never consumes `streaming` at all, so it cannot show that a turn is in flight.
+
+*Evidence: verified `AutopilotToggle.tsx:19-20` vs `AutopilotRail.module.css:485-497`*
+
+### A9 — The rail’s hand-built primitives track the token set deliberately, because they inherit nothing.
+
+**Status:** risk
+
+The rail imports zero antd components — every control is a raw element styled across 1176 lines of CSS off the same custom properties, by convention. This is intentional and documented, so the rail stays legible in both themes. The consequence is that every widget gets antd theme changes for free and the rail gets none: it is a second implementation of button and input primitives that must be kept in sync by hand.
+
+Directly relevant to this layer: the surface Autopilot lives in does not share primitives with the surface it is meant to be at parity with.
+
+*Evidence: verified: no antd import in `AutopilotRail.tsx` except `Tooltip` in the toggle*
+
+## What a page owes Autopilot
+
+Everything above governs how a page *invokes* the agent and what the agent *may do*. The inverse direction — what a page and its widgets must **offer** to be legible and drivable — is a real contract with real authoring consequences, and it was entirely undocumented.
+
+The collector reconstructs what Autopilot can see from the **live widget cache**, at send time, scoped to what is on screen. That single design choice makes several CR-authoring decisions silently decide what the agent can reason about.
+
+### A10 — A page's agent-visible surface is its *mounted* widgets — so tabbing a page hides content from Autopilot too.
+
+**Status:** CR
+
+The collector scopes to `type: 'active'` — queries with a mounted observer — deliberately, so widgets from other pages visited in the last few minutes don't leak in and ground the agent on off-page data.
+
+The consequence nobody writes down: **a widget on an unvisited tab is not in the context at all.** Choosing Tabs (P8) removes those panes from the agent exactly as it removes them from Ctrl-F. That is a real cost to weigh against the ones P8 already lists, and it argues for stacking on any page whose whole picture the agent is expected to reason about.
+
+*Evidence: verified `useAutopilotContext.ts:488-499`*
+
+### A11 — The agent sees the first array field and its first 30 rows. Put the answer above that line.
+
+**Status:** CR
+
+`MAX_ITEMS = 30` row labels per list or table, taken from the first of `dataSource` / `items` / `data`. Cell text is joined and cut at 300 characters, descriptions at 700, and a page envelope caps at 120 widgets.
+
+So a table whose default sort buries the interesting row at position 31 makes the agent blind to it, and a widget holding its rows under some other key is invisible to row sampling entirely. **A default sort is an agent-grounding decision, not only a reading-order one.**
+
+*Evidence: verified `useAutopilotContext.ts:27,73,119,142,163`*
+
+### A12 — Load and error state travel with the data, so the agent can say “still loading” instead of “none”.
+
+**Status:** holds
+
+The collector reads query *objects*, not just data, and carries freshness plus the errored render state. Without it a widget mid-fetch, a stale snapshot from a stale-while-revalidate cache, or a failed fetch all look like ground truth — and the agent reports “0 compositions” or confabulates a cause while the list is still loading.
+
+This is a designed anti-confabulation property and a fragile one: any change that passes data without its state reintroduces the failure. It is also what lets Autopilot answer “why isn’t the page loading?” rather than guess.
+
+*Evidence: verified `useAutopilotContext.ts:495-499` · large row counts are flagged as a client-render hazard after a list wedged a tab at ~60k rows*
+
+### A13 — An action id is a public API: stable, named for what it does, never casually renamed.
+
+**Status:** CR
+
+`runAction` resolves `{widget, actionId}` out of the live cache and dispatches the found action through the same dispatcher a click uses. Rename an id and the capability disappears — no error, no warning, the verb just becomes a no-op. Same silent-failure shape as P10's inert row, one layer up.
+
+*Evidence: verified `actionBridge.ts:397-408`*
+
+### A14 — Nothing reaches the agent except through the redaction chokepoint.
+
+**Status:** holds
+
+One pure function runs **last**, just before the envelope is serialized: denylisted keys (token, authorization, bearer, password, secret, credential, apiKey, jwt, accessToken) become `[redacted]`; JWT-shaped strings and long base64 blobs — Secret `data.*` payloads — are scrubbed anywhere they appear.
+
+Its own header calls it the defensive last line “so a future collector change cannot silently leak”. Codified here so the chokepoint stays single: a second serialization path that skips it would be invisible in review.
+
+*Evidence: verified `redact.ts:1-15`*
+
+## What Autopilot owes a page
+
+The reciprocal of A10–A14. A page makes itself legible to the agent; the agent has obligations back — to leave the page correct, to ground what it says in what it saw, and to be accountable for what it changed. Three of these hold and are worth protecting; two are open.
+
+### A15 — An agent write converges the page, exactly as a click does.
+
+**Status:** holds
+
+The bridge compiles a proposal to a canonical action and drives **the same dispatcher a click uses**, so it inherits RBAC, the blast-radius confirm, and the post-write revalidation — including the staggered background refetches at 800ms and 2200ms that exist because snowplow can read a just-written object through an informer that lags the write, so a single immediate refetch lands on pre-write state.
+
+The consequence worth naming: **Autopilot never leaves a page showing stale data after its own write.** Any future write path that bypasses the dispatcher loses all of this silently.
+
+*Evidence: verified `actionBridge.ts` (“Reuses `useHandleAction`”) · `useHandleActions.ts:33-42`*
+
+### A16 — The agent speaks from the envelope, not from memory.
+
+**Status:** holds
+
+The collector is stateless and snapshots at send time, so what the agent can say is bounded by what the page actually showed at that moment. It carries load and error state alongside the data precisely so a loading list cannot be mistaken for an empty one (A12).
+
+This is the property that makes “what does this page say?” answerable rather than plausible. It is also what a page breaks when it hides content behind a tab (A10).
+
+*Evidence: verified `useAutopilotContext.ts:2-8,488-499`*
+
+### A17 — An object the agent created is identifiable as such.
+
+**Status:** gap
+
+`applyResourceSet` stamps nothing — no label, no annotation, no provenance marker. Nothing on the cluster distinguishes an object the agent wrote from one a person wrote.
+
+A human’s click is equally unmarked, so this could be read as parity. It is not, for one reason: **the agent acts under the caller’s identity**, so the audit trail attributes its writes to the human. Attribution is not merely absent, it is misleading — and an agent can create ten objects in a turn the user approved as a single aggregate. “Why does this object exist?” has no answer.
+
+*Evidence: verified `applyResourceSet.ts` — the only `label` there is the UI chip’s text*
+
+### A18 — A verb that cannot act says so.
+
+**Status:** gap
+
+Two silent no-ops reach the user as nothing at all: a dead declared verb (A6), and a `runAction` whose target control is not mounted — `lookupAction` returns undefined and the verb quietly does nothing. In both cases a person asked for something and received no signal that it was not done.
+
+The unmounted-control case is the same silent-failure shape as P10’s inert row and A13’s renamed action id, and it is the one most likely to be read as the agent ignoring the request.
+
+*Evidence: verified `actionBridge.ts:397-408` · `verbRegistry.ts:129-141`*
+
+### A19 — The agent leaves the page’s own state and the cluster as it found them, minus what it was asked to change.
+
+**Status:** partly
+
+**Page state: breached.** `setExtras` rebuilds the query string from its own proposal, discarding every URL param it did not set — see X9. That is the agent damaging state the page owns.
+
+**Cluster debris: designed, with a known hole.** Preview drafts are swept on the next preview and torn down on drawer close, epoch-guarded so a stale close cannot delete a newer preview. But the contract is explicitly best-effort — “a failed delete is the janitor’s problem” — and teardown fires on *drawer close*, so a session that dies without one leaves its drafts until the next preview or an external janitor. Worth knowing rather than discovering.
+
+*Evidence: verified `previewPageV2.ts:13-23,116-125` · X9*

@@ -1,0 +1,230 @@
+# Layer 3 — Composition rules
+
+These govern how a page is assembled from widget CRs. Over half the recommended fixes in the backlog were marked “CR-only”, and this layer had no contract at all — [#57](https://github.com/krateo-platformops/frontend/issues/57) is its only precedent, written because *“this portal is the pattern future CR implementations will copy.”*
+
+## Page structure
+
+### P1 — One way back. The breadcrumb is it.
+
+**Status:** CR
+
+Never add a `← Back to X` link. Filed four times, on four pages, with an identical fix each time — the cleanest illustration in the set of a missing contract.
+
+*Evidence: #69 §0.2 · #78 §0.2 · #82 §0.4 · #83 §0.3*
+
+### P2 — No eyebrow label above a page title.
+
+**Status:** CR
+
+“CONSOLE”, “CATALOG” and similar were each removed individually. The title names the page; the eyebrow restates the nav.
+
+*Evidence: #80 §0.3 · #82 §0.2*
+
+### P3 — Say it once per page.
+
+**Status:** CR
+
+A tab’s `title` must not restate its own content heading; a subtitle must not repeat the title. Ten findings across seven issues are variations of this.
+
+```
+# tabs.obs-main.yaml — #83 §0.1
+items:
+  - label: Reconciliation
+    title: Composition health from live cluster snapshots  # verbatim duplicate of the section below
+```
+
+*Evidence: #69 §0.5 · #72 §0.1 · #82 §0.3 · #83 §0.1*
+
+### P4 — Counters sit beside the title, in brackets, on the title’s own type step.
+
+**Status:** CR
+
+*Evidence: #82 §0.3 · #86 §0.3*
+
+### P5 — Toolbar: filter chips left, search right, one line. Chip groups stack as left-aligned rows.
+
+**Status:** CR
+
+Seven findings across five pages.
+
+*Evidence: #75 §0.2 · #79 §0.1–0.2 · #80 §0.1 · #82 §0.1 · #86 §0.4*
+
+### P6 — One primary action per container — a page header *or* a self-contained panel.
+
+**Status:** CR
+
+**Rescoped.** This previously read “per header”, which was too narrow: the same discipline is already applied at panel level, and #86 §0.9a treats an Alert-detail panel as its own primary budget independent of the page header.
+
+The rescoping also resolves the apparent conflict with the Autopilot CTA. That button is **not** special-cased: it competes for the same single slot as any other button in its container, is never automatically primary for being Autopilot, and is never barred from being primary either. See A5.
+
+*Evidence: #78 §0.4 · #84 §0.1 · #86 §0.9 — rescoped by the parity audit*
+
+### P7 — Don’t spend two panels on two facts.
+
+**Status:** CR
+
+Twelve findings across seven issues. Collapse a thin second column into the first; keep a split only when both columns carry a real section.
+
+*Evidence: #69 §0.9 · #72 §0.7 · #78 §0.5 · #80 §0.2 · #82 §0.6 · #86 §0.7*
+
+### P8 — Tabs when the reader comes for one; stacked sections when they need more than one.
+
+**Status:** CR
+
+The discriminator is not how many sections there are — it is whether a single visit needs more than one of them. Alert detail stacks, because the pipeline walk, the config panel and the linked incident are one story about one object. The agents page tabs, because a visit wants the inventory *or* the topology, never both.
+
+Three tests for the ambiguous middle: would anyone **compare** two of them (tabs make that impossible)? Is there an **obvious default** (if not, the first tab is an arbitrary decision nobody made)? Are they **short** (stacking beats a click)?
+
+Two costs to accept before choosing tabs. **Deep-linking is one-way:** `?tab=Telemetry` lands on a tab, but the widget is uncontrolled, so switching does not update the URL — you can link into a tab, you cannot share the tab you switched to. And **hidden content is unsearchable** — Ctrl-F finds nothing on an inactive tab.
+
+A third option is often the right one: if the sections are genuinely different subjects rather than facets of one, they want their own **pages and nav entries**. Tabs are for the same subject at the same level.
+
+Observed practice backs this: only 4 of 612 CRs use Tabs, in two shapes — page-level alternatives (`obs-main`: Reconciliation / Telemetry / Components) and panel-level views of one object (`incident-why`: Reasoning trace / Verdict / Gaps). Everything else stacks.
+
+**Diagnostic:** if you are reaching for a divider, ask whether those sections belong on the same screen at all. The agents page was reported as “sections are not clearly divided” — they were not under-separated, they were wrongly co-located.
+
+Mechanical note: the `Tabs` enum carries `cols` but not `flexes`, so a section built as a `Flex` needs a one-level `Col` wrapper. `Col` does allow `flexes`.
+
+*Evidence: verified on origin/main: `Tabs.tsx:45-62` (uncontrolled `defaultActiveKey`, `?tab=` honoured) · 4 Tabs CRs across 29 page compositions*
+
+### P9 — Vertical rhythm between page sections keys off one spacing step.
+
+**Status:** open
+
+#54 §0.6 asked for a standard gap between major sections and a smaller one within a section. No shared page-rhythm convention exists, and with no `PageHeader` (C5) each page’s section gap stays ad hoc.
+
+*Evidence: #54 §0.6 — confirmed still unresolved*
+
+## Behaviour and honesty
+
+### P10 — A declared navigation must resolve — or must not be declared.
+
+**Status:** CR
+
+`buildRowPath` marks a path missing if any placeholder resolves to `undefined` *or empty string*, and `onRow` then returns `{}` — no handler, no cursor, no warning. The row is identical to a working one.
+
+```
+if (value === undefined || value === '') { missing = true }
+const path = buildRowPath(row)
+if (!path) { return {} }   ← silent
+```
+
+*Evidence: verified `Table.tsx:35-46`, `:218-222` — found live on builder rows with a hardcoded empty `url`*
+
+### P11 — Never emit an empty string where the widget’s fallback means something else.
+
+**Status:** CR
+
+`Table` renders `-` for any falsy cell, so a deliberately blank cell reads as “no data” rather than “not applicable”. Emit `U+00A0` when blank is the content.
+
+*Evidence: verified `Table.tsx:178`*
+
+### P12 — Nothing looks interactive unless it is.
+
+**Status:** CR
+
+Inert panel-header icons with button fill and hover, and non-functional tags, were both filed. Either give it an action or render it as plain, unboxed decoration.
+
+*Evidence: #69 §0.8 · #69 §0.9*
+
+### P13 — Status vocabulary is Kubernetes-native, and green means healthy.
+
+**Status:** CR
+
+`NotReady`, `NotSynced`, `Unhealthy` — never invented synonyms. A status colour is computed, never a literal: a hardcoded colour beside a branching label is how a failed state renders in the same tint as a queued one.
+
+*Evidence: #56 §0.2 · #78 §0.6 · see C11–C13 for the component-side pipelines*
+
+### P14 — Status indicators are exception-only.
+
+**Status:** CR
+
+Show a marker for the state needing attention. The healthy default renders nothing — a badge on every row hides the one row that matters.
+
+*Evidence: consistent with #72 §0.6 · `FreshnessBadge` verified compliant*
+
+### P15 — No emoji in titles, headings or status text.
+
+**Status:** CR
+
+*Evidence: #69 §0.3 — the same emoji reappeared twice more on that page*
+
+## Words
+
+### P16 — An error says what failed and what to do next. It never apologises or fills space.
+
+**Status:** gap
+
+The house style is otherwise consistent and good — four widgets pair a title with a specific description, Login says *“Wrong username or password, try again with different credentials”*, the voice path names the provider and the retry window.
+
+One string breaks it, and it is the one users hit most: `useCatchError` is the app-wide default for any unrecognised error — reached from every data-fetching widget, plus Auth and Login — and reads *“Ops! Something didn’t work” / “Unable to complete the operation, please try later.”* Apologetic, non-actionable, and misspelled.
+
+*Evidence: verified `useCatchError.tsx:20-21` vs the pattern in `Button.tsx:27`, `Card.tsx:67`, `Form.tsx:376`, `ListView.tsx:75`*
+
+### P17 — User-facing copy never leaks implementation vocabulary.
+
+**Status:** gap
+
+Rendered to end users today: *“The widget does not exist”*, *“does not have a status specification”*, `Submit action type is not "rest"`, and raw `resourceRefId`s inside error descriptions. A reader manages alerts, not Alert CRs.
+
+*Evidence: verified `WidgetRenderer.tsx:161,167,199` · `Form.tsx:386`*
+
+### P18 — A confirm button names the outcome it confirms.
+
+**Status:** gap
+
+`confirmModalProps.ts` is documented as *“the ONE HITL gate every mutating write passes through”* — and hardcodes `okText: 'Confirm'`, even though `BlastRadiusConfirm`’s `VERB_INTENT` map already knows whether this is a create, update, replace or **delete**, and shows it in the body. The sibling publish gate does it correctly with *“Confirm destination”*.
+
+On a platform whose whole premise is that blast radius is visible before you commit, the button should say the verb.
+
+*Evidence: verified `confirmModalProps.ts:63,66` vs `publishTargetForm.tsx:125-126`*
+
+### P19 — Truncated text always carries its full value on hover.
+
+**Status:** gap
+
+Six compliant instances make this real house convention — Breadcrumb, Notifications, Table, Card, ListView, and the rail’s evidence rows. Two live violators: `CommandPalette` search results and the Projects `Select`, both truncating arbitrary-length names with no `title` or tooltip.
+
+*Evidence: verified `CommandPalette.tsx:137-138` · `Select.tsx:128,144`*
+
+### P20 — Error titles are sentence case.
+
+**Status:** minor
+
+`'Internal Server Error'` is the one Title-Case outlier, sitting in the same function as sentence-case siblings.
+
+*Evidence: verified `useCatchError.tsx:33`*
+
+## Forms
+
+### P21 — Required fields render up front; optional fields collapse under “Advanced” but stay mounted.
+
+**Status:** holds
+
+Partitioned on `schema.required`, with `forceRender` so collapsed fields still register, validate and submit. Codified so a future change doesn’t unmount them instead of hiding them.
+
+*Evidence: verified `SchemaFields.tsx:150-186`*
+
+### P22 — A control’s width matches its semantics.
+
+**Status:** holds
+
+Selects, number inputs and JSON editors stretch to the column; a boolean `Switch` keeps its natural size. The one control with no width and no placeholder opinion is the plain string `Input`.
+
+*Evidence: verified `SchemaFields.tsx:48-64`*
+
+### P23 — Form actions: draft left, Cancel and primary grouped right, primary last.
+
+**Status:** holds
+
+Consistent with P6 and C18. A gated primary is rendered visibly disabled rather than merely losing its cursor.
+
+*Evidence: verified `Form.tsx:63-110` · `Form.module.css:24-41`*
+
+### P24 — A label sits above its control at full width.
+
+**Status:** landed
+
+Every schema field gets `labelCol`/`wrapperCol` span 24 unconditionally, with the fix citing its issue by number — this was #54 §0.4’s label-overlap bug.
+
+*Evidence: verified `SchemaFields.tsx:126-137`*
