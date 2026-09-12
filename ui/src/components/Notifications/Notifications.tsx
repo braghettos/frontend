@@ -94,8 +94,22 @@ const EventItem = memo(function EventItem({ deduped, onNavigate }: { deduped: De
           </Tooltip>,
         ]
         : []}
+      // a11y: `onClick` alone makes the row clickable with a mouse and unreachable without one —
+      // a List.Item is not focusable, is announced as nothing, and ignores Enter and Space. Same
+      // standard Table documents (WCAG 2.1.1) and ListView now shares. A row with no destination
+      // stays inert, so a keyboard user never lands on a tab stop that does nothing.
       onClick={resourceUrl ? () => onNavigate(resourceUrl) : undefined}
+      onKeyDown={resourceUrl
+        ? (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onNavigate(resourceUrl)
+          }
+        }
+        : undefined}
+      role={resourceUrl ? 'button' : undefined}
       style={resourceUrl ? { cursor: 'pointer' } : undefined}
+      tabIndex={resourceUrl ? 0 : undefined}
     >
       <List.Item.Meta
         avatar={
