@@ -124,7 +124,16 @@ export const colorDark: Record<keyof typeof color, string> = {
   slate: '#8496AD',
 }
 
-export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 } as const
+/**
+ * Spacing scale. `xxs`/`xsm`/`smd` fill what a doubling scale skips.
+ *
+ * Measured before adding them: of 211 hardcoded padding/margin/gap declarations, the commonest
+ * off-scale values were 6px (×17), 12px (×12) and 2px (×10) — and 6 and 12 are exactly the gaps
+ * between 4→8 and 8→16. A scale that doubles is too coarse for a dense console, and the UI had
+ * been reaching past it 162 times rather than once. Adding these three makes 39 of those
+ * declarations correct as written; 5/7/10 remain genuine drift and round to a neighbour.
+ */
+export const spacing = { xxs: 2, xs: 4, xsm: 6, sm: 8, smd: 12, md: 16, lg: 24, xl: 32 } as const
 
 // v2 radii: 2 (sm) / 4 (md, default) / 8 (lg) / 12 (xl).
 export const radius = { sm: 2, md: 4, lg: 8, xl: 12 } as const
@@ -200,6 +209,14 @@ const KRATEO_BASE: Record<string, string> = {
   'text-body-sm': '13px',
   'text-label': '13px',
   'text-caption': '12px',
+  // The micro-label tier — column headers, card eyebrows, status captions. Uppercase, usually
+  // mono, and BELOW `text-caption`: the scale's old floor was 12px while 52 declarations across
+  // twelve files sat at 9.5-11px. They were not drift FROM the scale, they were beneath it, and
+  // they span 1.5px — one tier that drifted because nothing named it, not four deliberate ones.
+  // Two steps consolidate all 52. (The same twelve files also agreed, unprompted, on
+  // letter-spacing 0.08em — see C17.)
+  'text-label-sm': '11px',
+  'text-label-xs': '10px',
   'text-code': '13px',
   'text-metric': '28px',
   // Nav-item colours are mode-independent (light text on the dark rail). The rail GRADIENT is
