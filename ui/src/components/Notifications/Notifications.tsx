@@ -1,11 +1,12 @@
 import type { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Badge, Button, Drawer, Empty, List, Skeleton, Tag, Tooltip, Typography } from 'antd'
+import { Badge, Drawer, Empty, List, Skeleton, Tag, Tooltip, Typography } from 'antd'
 import { memo, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router'
 
 import type { SSEK8sEvent } from '../../utils/types'
 import { DrawerHeader, drawerCloseProps } from '../DrawerHeader/DrawerHeader'
+import HeaderIconButton from '../HeaderIconButton'
 
 import styles from './Notifications.module.css'
 import { useNotifications } from './NotificationsContext'
@@ -166,17 +167,13 @@ export const NotificationsBell = () => {
   const { notifications, setOpen } = useNotifications()
   const hasWarning = (notifications ?? []).some(ev => ev.type === 'Warning')
 
+  // #80 §0.7: geometry and the accessible-name requirement both come from HeaderIconButton now.
+  // The Badge wrapper below stays here — the dot is this component's state, not header chrome.
   const bellButton = (
-    <Button
-      // Icon-only, so it has no accessible name from its content: a screen reader announces
-      // nothing at all without this. Every icon button in the Autopilot rail is labelled;
-      // the header chrome predates that convention.
-      aria-label='Notifications'
-      className={styles.icon}
-      icon={<FontAwesomeIcon icon={['fas', 'bell'] as IconProp} />}
-      onClick={() => setOpen(true)}
-      shape='circle'
-      type='text'
+    <HeaderIconButton
+      ariaLabel='Notifications'
+      icon={['fas', 'bell'] as IconProp}
+      onClick={() => { setOpen(true) }}
     />
   )
 

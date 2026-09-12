@@ -1,0 +1,15 @@
+/*
+ * One size for every header chrome control, so the bell, the theme toggle and anything added later
+ * share a centerline without each restating the number.
+ *
+ * `--header-icon-size` is emitted from `layout.headerIconSize` (theme/tokens.ts) — the same place
+ * `--header-h` comes from, because this is chrome geometry rather than content spacing.
+ */
+.headerIcon {
+  align-items: center;
+  display: inline-flex;
+  font-size: var(--krateo-text-h4);
+  height: var(--header-icon-size);
+  justify-content: center;
+  width: var(--header-icon-size);
+}
