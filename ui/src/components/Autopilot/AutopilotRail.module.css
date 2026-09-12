@@ -137,11 +137,11 @@
   border-bottom: 1px solid var(--border-color);
   display: flex;
   flex: none;
-  gap: 9px;
+  gap: var(--spacing-sm);
   /* #86 §0.10: shared header-height token — the rail header now tracks the main header (was a
      hardcoded 64px that only coincidentally matched). Fallback 64px for the pre-paint window. */
   height: var(--header-h, 64px);
-  padding: 0 12px;
+  padding: 0 var(--spacing-smd);
 }
 
 .apTitle {
@@ -170,9 +170,9 @@
   display: inline-flex;
   font-family: var(--font-mono);
   font-size: var(--krateo-text-label-xs);
-  gap: 5px;
+  gap: var(--spacing-xsm);
   letter-spacing: 0.06em;
-  padding: 1px 6px;
+  padding: var(--spacing-xxs) var(--spacing-xsm);
   text-transform: uppercase;
 }
 
@@ -261,14 +261,14 @@
   flex-direction: column;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 10px 0;
+  padding: var(--spacing-smd) 0;
   transition: width var(--motion-mid, 0.2s) ease, padding var(--motion-mid, 0.2s) ease, border-color var(--motion-mid, 0.2s) ease;
   width: 0;
 }
 
 .apHistoryColOpen {
   border-right-color: var(--border-color);
-  padding: 10px 6px;
+  padding: var(--spacing-smd) var(--spacing-xsm);
   width: 220px;
 }
 
@@ -279,8 +279,8 @@
   border-radius: var(--radius-sm);
   display: flex;
   gap: var(--spacing-xsm);
-  margin: 0 6px 8px;
-  padding: 5px 7px;
+  margin: 0 var(--spacing-xsm) var(--spacing-sm);
+  padding: var(--spacing-xsm) var(--spacing-sm);
 }
 
 .apHistorySearchWrap:focus-within {
@@ -318,7 +318,7 @@
   font-family: var(--font-mono);
   font-size: var(--krateo-text-label-xs);
   letter-spacing: 0.06em;
-  padding: 2px 6px 8px;
+  padding: var(--spacing-xxs) var(--spacing-xsm) var(--spacing-sm);
   text-transform: uppercase;
 }
 
@@ -326,7 +326,7 @@
   color: var(--gray-color);
   font-size: var(--krateo-text-caption);
   line-height: 1.5;
-  padding: 4px 6px 8px;
+  padding: var(--spacing-xs) var(--spacing-xsm) var(--spacing-sm);
 }
 
 .apHistoryRow {
@@ -337,7 +337,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xxs);
-  padding: 7px 8px;
+  padding: var(--spacing-sm);
   text-align: left;
   width: 100%;
 }
@@ -373,7 +373,7 @@
   color: var(--gray-color);
   font-size: 11.5px;
   line-height: 1.5;
-  padding: 7px 10px;
+  padding: var(--spacing-sm) var(--spacing-smd);
 }
 
 /* ── body ── */
@@ -381,10 +381,10 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 11px;
+  gap: var(--spacing-smd);
   min-height: 0;
   overflow: auto;
-  padding: 12px 12px 4px;
+  padding: var(--spacing-smd) var(--spacing-smd) var(--spacing-xs);
 }
 
 /* context strip — what Autopilot can SEE (redacted page-context). */
@@ -397,8 +397,8 @@
   display: flex;
   font-family: var(--font-mono);
   font-size: var(--krateo-text-label-xs);
-  gap: 7px;
-  padding: 6px 9px;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xsm) var(--spacing-sm);
 }
 
 .apCtx b {
@@ -426,7 +426,7 @@
   border-radius: 9px 9px 3px;
   color: var(--dark-color);
   max-width: 88%;
-  padding: 8px 11px;
+  padding: var(--spacing-sm) var(--spacing-smd);
 }
 
 .apMsgBot {
@@ -441,7 +441,7 @@
   color: var(--cyan-color);
   font-family: var(--font-mono);
   font-size: var(--krateo-text-label-sm);
-  padding: 1px 5px;
+  padding: var(--spacing-xxs) var(--spacing-xsm);
 }
 
 /* Assistant markdown (react-markdown). The bubble's pre-wrap is for plain text; inside markdown we
@@ -452,16 +452,16 @@
 }
 .apMd > :first-child { margin-top: 0; }
 .apMd > :last-child { margin-bottom: 0; }
-.apMd p { margin: 0 0 8px; }
-.apMd ul, .apMd ol { margin: 6px 0; padding-left: 18px; }
-.apMd li { margin: 2px 0; }
+.apMd p { margin: 0 0 var(--spacing-sm); }
+.apMd ul, .apMd ol { margin: var(--spacing-xsm) 0; padding-left: var(--spacing-md); }
+.apMd li { margin: var(--spacing-xxs) 0; }
 .apMd li > p { margin: 0; }
 
 .apMd h1, .apMd h2, .apMd h3, .apMd h4, .apMd h5, .apMd h6 {
   color: var(--dark-color);
   font-size: 1em;
   font-weight: 700;
-  margin: 10px 0 4px;
+  margin: var(--spacing-smd) 0 var(--spacing-xs);
 }
 .apMd strong { color: var(--dark-color); font-weight: 700; }
 .apMd a { color: var(--cyan-color); text-decoration: none; }
@@ -472,16 +472,16 @@
   border-radius: 6px;
   font-family: var(--font-mono);
   font-size: var(--krateo-text-label-sm);
-  margin: 6px 0;
+  margin: var(--spacing-xsm) 0;
   overflow-x: auto;
-  padding: 8px 10px;
+  padding: var(--spacing-sm) var(--spacing-smd);
 }
 .apMd pre code { background: none; color: var(--dark-color); padding: 0; }
 
 .apMd blockquote {
   border-left: 3px solid var(--border-color);
-  margin: 6px 0;
-  padding-left: 10px;
+  margin: var(--spacing-xsm) 0;
+  padding-left: var(--spacing-smd);
 }
 
 /* Streaming caret = the "Autopilot is EXECUTING" indicator. Signal Yellow #E8FF00 is Tier-2
@@ -515,7 +515,7 @@
   font-family: var(--font-mono);
   font-size: var(--krateo-text-label-sm);
   gap: var(--spacing-sm);
-  padding: 7px 9px;
+  padding: var(--spacing-sm);
 }
 
 .apActCheck {
@@ -549,7 +549,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  padding: 10px;
+  padding: var(--spacing-smd);
 }
 
 .apApprovalHead {
@@ -568,7 +568,7 @@
   font-size: var(--krateo-text-label-xs);
   font-weight: 600;
   letter-spacing: 0.04em;
-  padding: 2px 8px;
+  padding: var(--spacing-xxs) var(--spacing-sm);
   text-transform: uppercase;
 }
 
@@ -614,7 +614,7 @@
   margin: 0;
   max-height: 200px;
   overflow: auto;
-  padding: 8px 10px;
+  padding: var(--spacing-sm) var(--spacing-smd);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -683,7 +683,7 @@
   font-family: var(--font-mono);
   font-size: var(--krateo-text-label-sm);
   height: 24px;
-  padding: 0 9px;
+  padding: 0 var(--spacing-sm);
 }
 
 .apSg:hover {
@@ -697,7 +697,7 @@
   font-size: 12.5px;
   line-height: 1.6;
   margin: auto 0;
-  padding: 16px 8px;
+  padding: var(--spacing-md) var(--spacing-sm);
   text-align: center;
 }
 
@@ -714,14 +714,14 @@
    an offset that only gets more obvious the wider the rail (e.g. full-width mode). */
 .apEmpty .apSuggest {
   justify-content: center;
-  margin-top: 14px;
+  margin-top: var(--spacing-md);
 }
 
 /* ── composer ── */
 .apComposer {
   border-top: 1px solid var(--border-color);
   flex: none;
-  padding: 10px 12px 12px;
+  padding: var(--spacing-smd);
 }
 
 .apInput {
@@ -731,7 +731,7 @@
   border-radius: 9px;
   display: flex;
   gap: var(--spacing-sm);
-  padding: 8px 10px;
+  padding: var(--spacing-sm) var(--spacing-smd);
 }
 
 .apInput:focus-within {
@@ -782,7 +782,7 @@
   font-family: var(--font-mono);
   font-size: var(--krateo-text-label-xs);
   gap: var(--spacing-xsm);
-  margin-top: 7px;
+  margin-top: var(--spacing-sm);
 }
 
 .apNoteIcon {
@@ -801,14 +801,14 @@
   font-size: var(--krateo-text-label-xs);
   gap: var(--spacing-xsm);
   justify-content: space-between;
-  margin-bottom: 7px;
+  margin-bottom: var(--spacing-sm);
 }
 
 .apOasError {
   color: var(--magenta-color);
   font-family: var(--font-mono);
   font-size: var(--krateo-text-label-xs);
-  margin-bottom: 7px;
+  margin-bottom: var(--spacing-sm);
 }
 
 /* ── Evidence (per-answer source trace) ──
@@ -823,9 +823,9 @@
   display: flex;
   font-family: var(--font-mono);
   font-size: var(--krateo-text-label-xs);
-  gap: 5px;
+  gap: var(--spacing-xsm);
   letter-spacing: 0.04em;
-  padding: 4px 0 0;
+  padding: var(--spacing-xs) 0 0;
   text-transform: uppercase;
 }
 
@@ -837,8 +837,8 @@
   border-left: 2px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  margin-top: 5px;
+  gap: var(--spacing-xsm);
+  margin-top: var(--spacing-xsm);
   padding-left: var(--spacing-sm);
 }
 
@@ -879,7 +879,7 @@
   flex-direction: column;
   font-family: var(--font-mono);
   font-size: var(--krateo-text-label-xs);
-  gap: 1px;
+  gap: var(--spacing-xxs);
   line-height: 1.45;
   padding: 0;
   text-align: left;
@@ -954,8 +954,8 @@
   font-size: var(--krateo-text-label-sm);
   gap: var(--spacing-sm);
   line-height: 1.5;
-  margin-bottom: 7px;
-  padding: 5px 8px;
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-xsm) var(--spacing-sm);
 }
 
 /* A slow breathing dot: "audio is playing" with no motion large enough to distract, and
@@ -978,7 +978,7 @@
   cursor: pointer;
   font-size: var(--krateo-text-label-sm);
   margin-left: auto;
-  padding: 2px 8px;
+  padding: var(--spacing-xxs) var(--spacing-sm);
   white-space: nowrap;
 }
 
@@ -1069,8 +1069,8 @@
   font-size: var(--krateo-text-label-sm);
   gap: var(--spacing-sm);
   line-height: 1.5;
-  margin-bottom: 7px;
-  padding: 5px 8px;
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-xsm) var(--spacing-sm);
 }
 
 .apVoicePill {
@@ -1117,7 +1117,7 @@
   cursor: pointer;
   flex: none;
   font-size: var(--krateo-text-label-sm);
-  padding: 2px 8px;
+  padding: var(--spacing-xxs) var(--spacing-sm);
   white-space: nowrap;
 }
 
@@ -1132,8 +1132,8 @@
   border-radius: var(--radius-md);
   font-size: var(--krateo-text-label-sm);
   line-height: 1.5;
-  margin-bottom: 7px;
-  padding: 5px 8px;
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-xsm) var(--spacing-sm);
 }
 
 .apVoiceError {

@@ -57,10 +57,20 @@ IMPORTANT = re.compile(r'\s*!\s*important\s*$', re.I)
 
 
 def rule_spacing(path):
-    """T4 — padding/margin resolve to --spacing-*. `0` and `auto` are not sizes."""
+    """T4 — padding/margin resolve to --spacing-*. `0` and `auto` are not sizes.
+
+    A NEGATIVE margin is exempt. It is not spacing — it is an offset, pulling an element out of
+    the flow to meet something else: a collapsed border, a bleeding edge, or the fixed
+    screen-reader-only idiom (`height: 1px; margin: -1px; clip-path: inset(50%)`), where the
+    -1px is part of the pattern and snapping it to a token breaks it. Offsets answer to the thing
+    they are offsetting against, not to the spacing scale."""
     return _scan(
         path, r'(?:padding|margin)[a-z-]*:\s*([^;]+);',
-        lambda v: 'var(' in v or IMPORTANT.sub('', v).strip() in ('0', 'auto', '0 auto'),
+        lambda v: (
+            'var(' in v
+            or IMPORTANT.sub('', v).strip() in ('0', 'auto', '0 auto')
+            or re.search(r'-\d', v) is not None
+        ),
     )
 
 

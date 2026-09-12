@@ -14,6 +14,17 @@
   padding: var(--spacing-md);
 }
 
+/* A negative margin is an OFFSET, not spacing: it pulls an element out of the flow to meet
+   something else. This is the fixed screen-reader-only idiom, where the -1px belongs to the
+   pattern — snapping it to a token breaks it. Exempt. */
+.srOnly {
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  position: absolute;
+  width: 1px;
+}
+
 .b {
   animation: pulse 1.2s ease-in-out infinite;
 }
