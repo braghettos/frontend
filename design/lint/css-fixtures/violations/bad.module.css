@@ -1,0 +1,15 @@
+/* One of each rule, so every check has something to fire on. */
+.a {
+  color: #bada55;          /* T1 — a real hex literal */
+  font-size: 13px;         /* T3 — raw number */
+  padding: 11px 7px;       /* T4 — raw spacing */
+  gap: 7px;                /* T4 — raw gap */
+}
+
+.b {
+  animation: spin 2s linear infinite;  /* T9 — infinite, no reduced-motion block in this file */
+}
+
+@media (max-width: 911px) { /* T6 — an invented breakpoint */
+  .a { display: none; }
+}
