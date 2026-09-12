@@ -110,3 +110,67 @@ Not absent — *inconsistent*. The voice UI guards both its animations correctly
 The main header and the docked rail previously shared a hardcoded `64px` that matched only by coincidence.
 
 *Evidence: #86 §0.10 — verified `tokens.ts:132`*
+
+---
+
+## The sweep plan (T3 · T4)
+
+Audited 2026-09-12 across the 48 CSS modules. The headline is that **the sweep is not a
+substitution** — most hardcoded values have no token to substitute *to*, and that is the finding
+rather than an obstacle to it.
+
+### Font sizes — 16 of 92 substitute cleanly
+
+| | count |
+|---|---|
+| Map directly onto a token (`12px`, `13px`, `15px`) | **16** |
+| Off-scale | **76** |
+| …of which: the micro-label tier | **52** |
+
+The 52 are `9.5px` ×12, `10px` ×11, `10.5px` ×12, `11px` ×17, and they sit overwhelmingly inside
+**uppercase or mono blocks** — 11 of 11, 9 of 12, 11 of 12, 13 of 17. That is the C17 micro-label
+idiom: column headers, card eyebrows, status captions.
+
+Two things follow, and together they decide the approach:
+
+- The canonical scale's floor is `text-caption: 12px`, so **the product's densest typographic tier
+  has no token at all.** These values are not drift *from* the scale; they are below it.
+- The four values span **1.5px**. That is not four deliberate tiers — it is one tier that drifted
+  because nothing named it.
+
+**Decision: extend, do not round.** Rounding 52 declarations up to `12px` would visibly inflate
+every column header and status chip in the product, and would destroy a tier that twelve files
+independently converged on — the same twelve that also agreed, unprompted, on
+`letter-spacing: 0.08em`. Naming it costs two tokens and makes 52 declarations mechanical.
+
+### Spacing — 49 of 211 are clean
+
+```
+6px ×17    12px ×12    5px ×11    2px ×10    10px ×9    7px ×8
+```
+
+`6` and `12` are exactly the **half-steps the scale skips**: it doubles 4 → 8 → 16, and a dense
+console keeps reaching for what lies between. Adding `2`, `6` and `12` makes 39 more declarations
+clean. `5`, `7` and `10` genuinely are drift and should round to their neighbours.
+
+**The number that matters for planning: 85 of the 162 off-scale spacings are multi-value
+shorthand** — `2px 8px`, `0 6px`, `8px 10px`. Those are compound, often legitimately asymmetric,
+and need per-case judgement rather than substitution. That is where the time goes, not in the
+single-value replacements.
+
+### Order of work
+
+1. **Add the tokens first** — ~2 label sizes, ~3 spacing steps. Nothing can be swept onto a scale
+   that does not exist yet, and choosing them is a design decision rather than a mechanical one.
+2. **Then the ~91 mechanical declarations**, file by file, against the lint's baseline so each file
+   burns down visibly and nothing re-drifts behind you.
+3. **Then the shorthand and the one-offs**, which need eyes on each.
+
+The lint (`lint/lint-css-tokens.py`) exists so step 2 can happen incrementally instead of as one
+large untestable diff — its baseline shrinks as files are done, and CI catches anything new.
+
+### What this audit corrected
+
+The plan before it was "replace ~305 hardcoded values with tokens", which assumed the tokens
+existed. Two thirds of them do not. **Most of this work is a design decision about what the scales
+are missing; the replacement is the small part afterwards.**
