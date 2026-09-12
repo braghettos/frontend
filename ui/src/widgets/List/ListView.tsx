@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Avatar, Card, List as AntdList, Button, Dropdown, Progress, Tag, Tooltip, Typography } from 'antd'
 import useApp from 'antd/es/app/useApp'
 import type { ListGridType } from 'antd/es/list'
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 
 import { WidgetEmpty } from '../../components/WidgetStates'
@@ -11,6 +11,38 @@ import { useHandleAction } from '../../hooks/useHandleActions'
 import { getColorCode } from '../../theme/palette'
 import type { ResourcesRefs, Widget, WidgetAction, WidgetActions } from '../../types/Widget'
 import { navigateOrExternal } from '../../utils/navigation'
+
+/**
+ * The full interactive contract for a row that navigates somewhere — or nothing at all when it
+ * does not.
+ *
+ * `onClick` alone makes a row clickable with a mouse and unreachable without one: a <div> or an
+ * antd List.Item is not focusable, is announced as nothing, and ignores Enter and Space. `Table`
+ * fixed exactly this and documented the standard (WCAG 2.1.1, pinned by Table.a11y.test.tsx);
+ * ListView reproduced the original shape across four navigable variants — the default row, the
+ * tree row, the card tile that backs the Marketplace grid, and the rich row.
+ *
+ * Returning an EMPTY object for a row with no destination matters: a non-navigating row must not
+ * become focusable, or keyboard users get a tab stop that does nothing.
+ *
+ * (The filter chip is deliberately not a caller — it is already an antd Button, which carries all
+ * of this natively. Adding a role to it would give the element two.)
+ */
+const rowNavProps = (to: string | undefined, go: (path: string) => void) => {
+  if (!to) { return {} }
+  const activate = () => { go(to) }
+  return {
+    onClick: activate,
+    onKeyDown: (event: ReactKeyboardEvent<HTMLElement>) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        activate()
+      }
+    },
+    role: 'button',
+    tabIndex: 0,
+  }
+}
 
 import { resolveRow, type ItemTemplate } from './itemTemplate'
 import styles from './ListView.module.css'
@@ -116,7 +148,7 @@ export const ListView = ({
             <AntdList.Item
               className={navPath ? styles.clickable : undefined}
               key={`${rowKey}-${index}`}
-              onClick={navPath ? () => navigateOrExternal(navigate, navPath) : undefined}
+              {...rowNavProps(navPath, (path) => navigateOrExternal(navigate, path))}
             >
               {child}
             </AntdList.Item>
@@ -168,7 +200,7 @@ export const ListView = ({
             <AntdList.Item
               className={`${styles.treeRow} ${row.navigateTo ? styles.clickable : ''}`}
               key={`${rowKey}-${index}`}
-              onClick={row.navigateTo ? () => navigateOrExternal(navigate, row.navigateTo) : undefined}
+              {...rowNavProps(row.navigateTo, (path) => navigateOrExternal(navigate, path))}
             >
               <span className={styles.treeConnector}>└─</span>
               <span className={styles.treeDot} style={{ backgroundColor: colorCode, boxShadow: `0 0 5px 1px ${colorCode}` }} />
@@ -209,7 +241,7 @@ export const ListView = ({
               <Card
                 className={`${styles.tileCard} ${row.navigateTo ? styles.clickable : ''} ${isSpotlit ? styles.spotlight : ''}`}
                 hoverable={Boolean(row.navigateTo)}
-                onClick={row.navigateTo ? () => navigateOrExternal(navigate, row.navigateTo) : undefined}
+                {...rowNavProps(row.navigateTo, (path) => navigateOrExternal(navigate, path))}
                 size='small'
               >
                 <div className={styles.cardTop}>
@@ -326,7 +358,7 @@ export const ListView = ({
                 : undefined
             }
             key={`${rowKey}-${index}`}
-            onClick={row.navigateTo ? () => navigateOrExternal(navigate, row.navigateTo) : undefined}
+            {...rowNavProps(row.navigateTo, (path) => navigateOrExternal(navigate, path))}
           >
             {/* Reconciliation-rail aggregate band: no avatar/label → let the bar span full width
                 (a List.Item.Meta with empty title still claims ~half the row otherwise). */}
