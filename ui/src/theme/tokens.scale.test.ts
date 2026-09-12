@@ -27,7 +27,7 @@ describe('spacing scale', () => {
 
   it('ascends with no duplicate values', () => {
     const values = Object.values(spacing)
-    expect([...values].sort((a, b) => a - b)).toEqual(values)
+    expect([...values].sort((left, right) => left - right)).toEqual(values)
     expect(new Set(values).size).toBe(values.length)
   })
 })
