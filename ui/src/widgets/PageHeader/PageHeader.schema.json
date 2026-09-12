@@ -23,9 +23,7 @@
           "description": "the data that will be passed to the widget on the frontend",
           "type": "object",
           "required": [
-            "title",
-            "allowedResources",
-            "items"
+            "title"
           ],
           "additionalProperties": false,
           "properties": {
