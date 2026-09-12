@@ -9,7 +9,7 @@ import { getWidgetModule } from '../../widgets/registry'
 import { useFilter } from '../FiltesProvider/FiltersProvider'
 import { FreshnessBadge } from '../FreshnessBadge/FreshnessBadge'
 import { ScrollPagination } from '../Pagination/ScrollPagination'
-import { WidgetError, WidgetLoading, WidgetTimeout } from '../WidgetStates'
+import { WidgetError, WidgetErrorBoundary, WidgetForbidden, WidgetLoading, WidgetNotFound, WidgetTimeout } from '../WidgetStates'
 
 import styles from './WidgetRenderer.module.css'
 
@@ -150,10 +150,27 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
     if (timedOut) {
       return <WidgetTimeout onRetry={() => { void refetch() }} />
     }
+
+    // The server ANSWERED, and the answer was a legitimate outcome rather than a malfunction.
+    // Only 401 (session resume) and the timeout statuses were classified before, so a 403 and a
+    // 500 rendered the identical red cross — distinguishable only by an HTTP status buried in a
+    // free-text sentence. On a platform that scopes reads per user by design, "you may not see
+    // this" is an expected state and must not be dressed as a failure. Neither is retryable.
+    const status = (error as { status?: number } | null)?.status
+    const detail = (error as { detail?: string } | null)?.detail
+    if (status === 403) {
+      return <WidgetForbidden subtitle={detail} />
+    }
+    if (status === 404) {
+      return <WidgetNotFound subtitle={detail} />
+    }
+
     const failedToFetch = error instanceof Error && (error instanceof TypeError || error.message.includes('Failed to fetch'))
+    // Prefer the backend's OWN words when the failure response carried them; `res.statusText`
+    // alone is a generic HTTP phrase that says nothing about the cause.
     const subtitle = failedToFetch
       ? "Couldn't reach the server. It may still be starting up."
-      : `There has been an error while fetching the widget: ${error instanceof Error ? error.message : 'unknown error'}`
+      : detail ?? `There has been an error while fetching the widget: ${error instanceof Error ? error.message : 'unknown error'}`
     return <WidgetError onRetry={() => { void refetch() }} subtitle={subtitle} />
   }
 
@@ -223,7 +240,17 @@ const WidgetRenderer = ({ invisible = false, onLoadingChange, prefix, widgetEndp
     return null
   }
 
-  const renderedWidget = parseWidget(widget, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchingResourcesRefs, serverPagination)
+  // Wrapped in a boundary so a render-time throw from THIS widget shows this widget's error card
+  // instead of taking the page with it. React 19 unmounts the whole tree on an uncaught render
+  // error, and the app had no boundary anywhere — so malformed `widgetDataTemplate` output (which
+  // --dry-run=server never validates) blanked the page rather than failing in place.
+  // `resetKey={dataUpdatedAt}` un-latches the boundary when a refetch brings new data, so a
+  // transiently-bad payload does not leave the widget permanently stuck on its first bad render.
+  const renderedWidget = (
+    <WidgetErrorBoundary resetKey={dataUpdatedAt} widgetId={`${kind} @ ${widgetEndpoint}`}>
+      {parseWidget(widget, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchingResourcesRefs, serverPagination)}
+    </WidgetErrorBoundary>
+  )
 
   // Overlay a tiny freshness DOT on the widget ONLY when (1) the widget CR OPTS IN via
   // `spec.freshness: true` AND (2) its state is worth noticing — actively refreshing, or
