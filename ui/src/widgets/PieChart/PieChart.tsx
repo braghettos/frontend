@@ -1,6 +1,6 @@
 import { Pie } from '@ant-design/plots'
-import { Empty } from 'antd'
 
+import { WidgetEmpty } from '../../components/WidgetStates'
 import { useMeasuredWidth } from '../../hooks/useMeasuredWidth'
 import { getChartCatPalette } from '../../theme/chart-utils'
 import { getColorCode } from '../../theme/palette'
@@ -36,7 +36,7 @@ const PieChart = ({ uid, widgetData }: WidgetProps<PieChartWidgetData>) => {
   const height = widgetData.height ?? 240
 
   if (!widgetData.data?.length) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+    return <WidgetEmpty description='No data to chart' />
   }
 
   // Optional semantic slice colors: map each colorField category to a palette color. Without an
