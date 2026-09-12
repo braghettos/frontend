@@ -82,3 +82,42 @@ describe('deny-by-default — the registry IS the gate', () => {
     expect(READONLY_VERB_REGISTRY.navigate.argSchema(proposal)).toBe(false)
   })
 })
+
+/**
+ * A18 — a verb that cannot act says so.
+ *
+ * These two entries are declared and always return null: openDrawer/openModal were deferred to a
+ * later increment, and the registry kept them so the verb would be "declared, not merely absent".
+ * The effect on a reader was the opposite of honest — the model proposes the verb, nothing happens,
+ * and no chip appears. An UNREGISTERED verb produced exactly the same silence.
+ *
+ * The fix lives in actionBridge (`refused`), which turns every null into a read-only chip naming
+ * the verb. These tests pin the stubs' contract so the behaviour they rely on cannot drift.
+ */
+describe('READONLY_VERB_REGISTRY — the deferred stubs', () => {
+  const deferred = ['openDrawer', 'openModal']
+
+  deferred.forEach((verb) => {
+    it(`${verb} is declared, read-only, and validates its argument`, () => {
+      const spec = READONLY_VERB_REGISTRY[verb]
+      expect(spec).toBeDefined()
+      expect(spec.sideEffect).toBe('read')
+      expect(spec.argSchema({ resourceRefId: 'card-x', verb })).toBe(true)
+      expect(spec.argSchema({ verb })).toBe(false)
+    })
+
+    it(`${verb} resolves to null — it has no implementation yet, and must not pretend otherwise`, async () => {
+      const spec = READONLY_VERB_REGISTRY[verb]
+      const { deps } = makeDeps()
+      await expect(spec.apply({ resourceRefId: 'card-x', verb }, deps)).resolves.toBeNull()
+    })
+  })
+
+  it('driving a shipped drawer button is what runAction is for — these stubs are not the route', () => {
+    // Worth pinning as documentation: the portal's openDrawer capability is reachable today via
+    // runAction against a Button CR that declares an openDrawer action. Implementing these stubs
+    // would let the agent open a drawer for a ref NO button exposes — which would create a Layer 5
+    // capability gap rather than close one.
+    expect(READONLY_VERB_REGISTRY.runAction).toBeUndefined()
+  })
+})

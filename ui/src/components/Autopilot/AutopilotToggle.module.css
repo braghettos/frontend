@@ -54,3 +54,18 @@
   line-height: 1.6;
   padding: 0 5px;
 }
+
+/*
+ * "Autopilot is EXECUTING" — Signal Yellow, Tier-2 locked to this one meaning (issue #49), the
+ * same token the rail's streaming caret uses. Deliberately static: a blink here would loop for the
+ * whole turn in the page header, which is the motion G13 rules out. Its presence is the signal.
+ */
+.executing {
+  background: var(--krateo-color-agent-signal-fill);
+  border-radius: 50%;
+  display: inline-block;
+  flex: 0 0 auto;
+  height: 6px;
+  margin-left: 2px;
+  width: 6px;
+}

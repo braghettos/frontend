@@ -340,6 +340,24 @@ export const parseAutopilotDirectives = (text: string): AutopilotDirectives => {
 }
 
 /**
+ * A18 — a verb that cannot act SAYS SO.
+ *
+ * `apply` returned null for every refusal: an unknown verb, an argument failing its schema, a write
+ * verb reaching the read path, a `runAction` whose target control is not mounted on this page. The
+ * provider drops a null chip, so all of those were indistinguishable from the agent simply ignoring
+ * the request — no chip, no message, nothing.
+ *
+ * Silence is the worst available answer. The person asked for something specific and the portal
+ * declined; naming the refused verb at least points them at the right question. Read-only, so it
+ * reads as an outcome rather than an action taken.
+ */
+const refused = (verb: string): AutopilotActionChip => ({
+  label: `${verb} — this portal did not run it`,
+  readOnly: true,
+  verb,
+})
+
+/**
  * The bridge hook. `apply` compiles ONE proposal to a canonical action and drives
  * the real dispatcher, returning the chip to show (or null if denied / not
  * drivable). Reuses `useHandleAction`, so RBAC + the URL-merge semantics are
@@ -463,9 +481,12 @@ export const useAutopilotActionBridge = () => {
     // compiled + driven through the same real dispatcher a hand-clicked control uses.
     const spec = READONLY_VERB_REGISTRY[proposal.verb]
     if (!spec || spec.sideEffect !== 'read' || !spec.argSchema(proposal)) {
-      return null
+      return refused(proposal.verb)
     }
-    return spec.apply(proposal, { frontendNamespace, handleAction, renderBaseUrl, routePatterns, snowplowBaseUrl })
+    // A verb's own handler also returns null when IT cannot act — a runAction whose target control
+    // is not mounted, a navigate to an unregistered route. Same silence, same answer.
+    return (await spec.apply(proposal, { frontendNamespace, handleAction, renderBaseUrl, routePatterns, snowplowBaseUrl }))
+      ?? refused(proposal.verb)
   }, [frontendNamespace, handleAction, handleActionSet, previewPageSession, queryClient, renderBaseUrl, routePatterns, sandboxNamespace, snowplowBaseUrl])
 
   return { apply }
