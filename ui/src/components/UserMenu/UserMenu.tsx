@@ -1,5 +1,6 @@
 import type { MenuProps } from 'antd'
 import { Avatar, Menu, Popover, Typography } from 'antd'
+import { useState } from 'react'
 import { Link } from 'react-router'
 
 import { useConfigContext } from '../../context/ConfigContext'
@@ -10,6 +11,9 @@ import styles from './UserMenu.module.css'
 
 const UserMenu = () => {
   const { refetch } = useConfigContext()
+  // Controlled so the trigger can announce its state via aria-expanded. antd's Popover is
+  // uncontrolled by default, which leaves a screen reader no way to know the menu is open.
+  const [open, setOpen] = useState(false)
 
   const userData = JSON.parse(localStorage.getItem('K_user') || '{}') as AuthResponseType
   const { avatarURL, displayName, username } = userData.user || {}
@@ -80,16 +84,33 @@ const UserMenu = () => {
           />
         </section>
       }
+      onOpenChange={setOpen}
+      open={open}
       placement='topLeft'
       trigger='click'
     >
-      <Avatar
-        gap={2}
-        size='default'
-        src={avatarURL}
+      {/*
+        * antd's Popover binds only `onClick` to its child — it adds NO keyboard affordance unless
+        * that child is already focusable. `Avatar` renders a <span>, so the whole account menu
+        * (profile, logout) was unreachable without a mouse, on every page. Wrapping in a real
+        * <button> gives it focus, a role, Enter/Space activation and the global :focus-visible ring
+        * for free; `aria-haspopup`/`aria-expanded` announce what it does and its current state.
+        */}
+      <button
+        aria-expanded={open}
+        aria-haspopup='menu'
+        aria-label='Account menu'
+        className={styles.trigger}
+        type='button'
       >
-        <Typography.Text>{initials}</Typography.Text>
-      </Avatar>
+        <Avatar
+          gap={2}
+          size='default'
+          src={avatarURL}
+        >
+          <Typography.Text>{initials}</Typography.Text>
+        </Avatar>
+      </button>
     </Popover>
   )
 }

@@ -154,6 +154,10 @@ export const NotificationsBell = () => {
 
   const bellButton = (
     <Button
+      // Icon-only, so it has no accessible name from its content: a screen reader announces
+      // nothing at all without this. Every icon button in the Autopilot rail is labelled;
+      // the header chrome predates that convention.
+      aria-label='Notifications'
       className={styles.icon}
       icon={<FontAwesomeIcon icon={['fas', 'bell'] as IconProp} />}
       onClick={() => setOpen(true)}

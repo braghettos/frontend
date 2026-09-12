@@ -65,3 +65,17 @@
     }
   }
 }
+/*
+ * The account-menu trigger. It has to be a real <button> so the Popover is keyboard-reachable
+ * (antd binds only onClick to its child and adds no focus affordance), but it must not LOOK like
+ * a button — the avatar is the entire visual. Strip the chrome, keep the semantics; the global
+ * *:focus-visible ring in index.css then applies for free.
+ */
+.trigger {
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  padding: 0;
+}
