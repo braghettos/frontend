@@ -56,3 +56,21 @@
     opacity: 0.4;
   }
 }
+
+/*
+ * T9: a looping animation must respect prefers-reduced-motion.
+ *
+ * These two pulses are the only genuinely INFINITE animations in the codebase, and they were the
+ * only ones unguarded — the voice UI guards both of its own and substitutes a static state. A dot
+ * pulsing forever in the corner of the eye is a real cost for a motion-sensitive reader, and it is
+ * reporting nothing new after the first second: the colour already carries the state.
+ *
+ * The dot stays fully visible, it simply stops moving — the information is in the hue, not the
+ * motion.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .refreshing,
+  .live {
+    animation: none;
+  }
+}

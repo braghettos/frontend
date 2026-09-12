@@ -1,0 +1,21 @@
+/* The same shapes, authored correctly. Every rule must stay SILENT here — these are the cases
+   that would make the lint noisy if a future "improvement" got them wrong. */
+.a {
+  /* A hex inside a var() fallback is defensive CSS doing the right thing, not a hardcoded colour. */
+  border-color: color-mix(in srgb, var(--text-color, #888) 20%, transparent);
+  color: var(--gray-color);
+  font-size: var(--font-size-sm);
+  gap: var(--spacing-sm);
+  /* `0` and `auto` are not sizes — requiring a token for them would be absurd. */
+  margin: 0 auto;
+  padding: var(--spacing-md);
+}
+
+.b {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+/* The guard that makes .b legitimate. File-scoped by design. */
+@media (prefers-reduced-motion: reduce) {
+  .b { animation: none; }
+}
