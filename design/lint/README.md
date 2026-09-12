@@ -27,6 +27,8 @@ Exit code is the number of violations, so CI fails on any.
 | `back-link` | P1 | A `← Back to X` label. Filed four times on four pages with an identical fix each time. |
 | `emoji` | P15 | Emoji in a title, label or status text. |
 | `tag-colour-no-label` | C13 | A `Tag` with a colour and no label — meaning carried by colour alone. |
+| `dead-kind` | X11 | A widget kind the frontend no longer resolves — `Panel`, `DataGrid`, `Column`, `TabList`, `NavMenu`, or a removed routing kind. Renders nothing. |
+| `legacy-envelope` | X12 | `resourcesRefs` as a bare list instead of `{items: […]}`. The CR does not apply at all. |
 
 ## The scope discipline
 
@@ -54,8 +56,32 @@ drafts noisy, so a future "improvement" that reintroduces them fails the test.
 
 ## Current state
 
-Against `krateo-platformops/portal` at `origin/main` (685 CRs): **0 violations.** The rules are
-regression guards, not a backlog — they exist so these five classes cannot come back.
+Against `krateo-platformops/portal` at `origin/main` (685 CRs): **0 violations.** Those rules are
+regression guards, not a backlog — they exist so those classes cannot come back.
+
+### The starter templates are not clean
+
+The first real use of this lint found the charts **new portals are cloned from** are on a dead
+schema. The antd-fidelity migration was a hard break with no aliases, and these never migrated:
+
+| chart | CRs | on dead kinds |
+|---|---|---|
+| `composable-portal-starter` | 32 | **12** — DataGrid, NavMenu, NavMenuItem, Page, Panel, Route, RoutesLoader |
+| `composition-portal-starter` | 17 | **7** — CompositionReference, EventList, Panel, TabList |
+| `template-chart` | 13 | **6** — Column, Page, Panel, Route |
+| `portal-composition-page` | 20 | **6** — EventList, Panel, TabList |
+
+Two of them also carry the legacy bare-list `resourcesRefs`, which the current CRD rejects at
+apply time. So a portal started from these is broken before anyone edits a line: 30–46% of its
+widgets resolve to nothing, and some CRs never apply at all.
+
+This is the highest-leverage place the design system can reach, and the smallest surface — 13–32
+CRs each against the portal's 685. Every future portal inherits whatever they carry.
+
+**A note on this script's own bug.** It originally *crashed* on the two charts using the legacy
+envelope, because it assumed `resourcesRefs` was always an object. A lint that dies on the charts
+most likely to be stale is a lint that never reports on them — so the tolerant accessor and
+`legacy-envelope` exist precisely because that shape turned up in the wild.
 
 ## Wiring it into a chart's CI
 

@@ -111,6 +111,21 @@ def widget_data(doc):
     return ((doc.get('spec') or {}).get('widgetData') or {})
 
 
+def declared_refs(doc):
+    """The ids in `resourcesRefs`, tolerating the legacy bare-list shape.
+
+    The current CRD declares `resourcesRefs` as an object (`{items, slice}`), but pre-migration
+    charts carry a bare list. Crashing on those was this script's own bug: a lint that dies on the
+    charts most likely to be stale is a lint that never reports on them. The legacy shape is
+    surfaced by `legacy-envelope` instead."""
+    refs = (doc.get('spec') or {}).get('resourcesRefs')
+    if isinstance(refs, dict):
+        refs = refs.get('items') or []
+    if not isinstance(refs, list):
+        return set(), False
+    return {r.get('id') for r in refs if isinstance(r, dict)}, isinstance((doc.get('spec') or {}).get('resourcesRefs'), list)
+
+
 def templated_paths(doc):
     """The `forPath` values a widgetDataTemplate will fill at resolve time. A field listed here is
     NOT absent — it is computed — so no check may treat it as missing."""
@@ -143,7 +158,7 @@ def rule_dangling_ref(crs):
     out = []
     for fname, doc in crs:
         spec = doc.get('spec') or {}
-        declared = {r.get('id') for r in ((spec.get('resourcesRefs') or {}).get('items') or []) if isinstance(r, dict)}
+        declared, _legacy = declared_refs(doc)
         # A resourcesRefsTemplate mints refs at resolve time, so its ids are not knowable here.
         if spec.get('resourcesRefsTemplate'):
             continue
@@ -239,7 +254,47 @@ def rule_tag_colour_without_label(crs):
     return out
 
 
+def rule_dead_kind(crs):
+    """A widget kind the frontend no longer resolves.
+
+    The antd-fidelity migration was a HARD BREAK with no aliases — `Panel`→`Card`, `DataGrid`→
+    `Listy`, `Column`→`Col`, `TabList`→`Tabs`, `NavMenu`→`Menu` — and the routing kinds (`Page`,
+    `Route`, `RoutesLoader`, `NavMenuItem`) were removed outright when routing became data. A CR
+    on one of these renders nothing: `getWidgetModule(kind)` returns undefined.
+
+    This matters most in the charts nobody looks at. Measured across the four starter templates
+    that new portals are CLONED from, 30-46% of CRs in each are on dead kinds — so a portal
+    started from them is broken before anyone edits a line."""
+    out = []
+    for fname, doc in crs:
+        kind = doc.get('kind')
+        if kind in RENAMED_KINDS:
+            out.append((fname, f'kind: {kind} no longer resolves — renamed to {RENAMED_KINDS[kind]} (hard break, no alias)'))
+        elif kind in REMOVED_KINDS:
+            out.append((fname, f'kind: {kind} was removed — routing is data now; the sidebar Menu\'s inline items are the route source'))
+    return out
+
+
+def rule_legacy_envelope(crs):
+    """`resourcesRefs` as a bare list instead of `{items: [...]}`.
+
+    The current CRD declares it an object. A chart still using the list form does not apply at
+    all — it fails validation before a single widget renders."""
+    out = []
+    for fname, doc in crs:
+        if isinstance((doc.get('spec') or {}).get('resourcesRefs'), list):
+            out.append((fname, 'resourcesRefs is a bare list — the current CRD declares it an object ({items, slice}); this CR will not apply'))
+    return out
+
+
+# Source: ui/docs/cr-migration-map.json. Embedded so the script runs standalone in a chart's CI
+# without needing this repo checked out beside it.
+RENAMED_KINDS = {'Panel': 'Card', 'Column': 'Col', 'TabList': 'Tabs', 'NavMenu': 'Menu', 'DataGrid': 'Listy', 'List': 'Listy'}
+REMOVED_KINDS = {'Page', 'Route', 'RoutesLoader', 'NavMenuItem', 'EventList', 'CompositionReference'}
+
 RULES = {
+    'dead-kind': (rule_dead_kind, 'X11'),
+    'legacy-envelope': (rule_legacy_envelope, 'X12'),
     'dangling-ref': (rule_dangling_ref, 'X4'),
     'row-nav-placeholder': (rule_row_nav_placeholder, 'P10'),
     'back-link': (rule_back_link, 'P1'),
