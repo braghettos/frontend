@@ -1,7 +1,7 @@
 import { FlowGraph, G6 } from '@ant-design/graphs'
 import { ReactNode as G6ReactNode } from '@antv/g6-extension-react'
-import { Empty } from 'antd'
 
+import { WidgetEmpty } from '../../components/WidgetStates'
 import type { WidgetProps } from '../../types/Widget'
 
 import styles from './FlowChart.module.css'
@@ -25,7 +25,7 @@ const FlowChart = ({ uid, widgetData }: WidgetProps<FlowChartWidgetData>) => {
   const graphData = toGraphData(data)
 
   if (!data || graphData.nodes.length === 0) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+    return <WidgetEmpty description='Nothing to graph' />
   }
 
   return (

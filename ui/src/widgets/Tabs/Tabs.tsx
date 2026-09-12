@@ -1,8 +1,9 @@
 import type { TabsProps } from 'antd'
-import { Empty, Result, Tabs as AntdTabs } from 'antd'
+import { Result, Tabs as AntdTabs } from 'antd'
 import { useMemo } from 'react'
 
 import WidgetRenderer from '../../components/WidgetRenderer'
+import { WidgetEmpty } from '../../components/WidgetStates'
 import type { WidgetProps } from '../../types/Widget'
 import { getEndpointUrl } from '../../utils/utils'
 
@@ -56,7 +57,7 @@ const Tabs = ({ resourcesRefs, uid, widgetData }: WidgetProps<TabsWidgetData>) =
   }, [items, uid])
 
   if (!items.length) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+    return <WidgetEmpty description='No tabs to show' />
   }
 
   return <AntdTabs centered={centered} className={styles.tabs} defaultActiveKey={defaultActiveKey} items={tabItems} key={uid} size={size} tabPlacement={tabPlacement} type={type} />

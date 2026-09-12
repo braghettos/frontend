@@ -1,6 +1,6 @@
 import { Line } from '@ant-design/plots'
-import { Empty } from 'antd'
 
+import { WidgetEmpty } from '../../components/WidgetStates'
 import { useMeasuredWidth } from '../../hooks/useMeasuredWidth'
 import { getChartCatPalette } from '../../theme/chart-utils'
 import { getColorCode } from '../../theme/palette'
@@ -107,7 +107,7 @@ const LineChart = ({ uid, widgetData }: WidgetProps<LineChartWidgetData>) => {
   const height = widgetData.height ?? 300
 
   if (!widgetData.data?.length) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+    return <WidgetEmpty description='No data to chart' />
   }
 
   // When the CR marks xField as epochs (`xTimeUnit`), relabel data + annotations to the browser's

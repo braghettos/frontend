@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router'
 
 import { useFilter } from '../../components/FiltesProvider/FiltersProvider'
 import WidgetRenderer from '../../components/WidgetRenderer'
+import { WidgetEmpty } from '../../components/WidgetStates'
 import { getColorCode, getTagStyle } from '../../theme/palette'
 import type { WidgetProps } from '../../types/Widget'
 import { navigateOrExternal } from '../../utils/navigation'
@@ -223,6 +224,14 @@ const Table = ({ resourcesRefs, serverPagination, uid, widgetData }: WidgetProps
       }))}
       dataSource={dataTable}
       key={uid}
+      // C14/C15: Table had NO empty-state handling — a possibly-empty dataSource went straight to
+      // antd, whose unstyled default is the only thing a reader saw, and it is the one collection
+      // widget that never routed through the shared state. Now a zero-row table reads the same as
+      // an empty List or chart.
+      //
+      // `hideWhenEmpty` (which List has) is deliberately NOT added here: it is a new schema field,
+      // so it needs the CRD and chart to move with it. This is the rendering contract only.
+      locale={{ emptyText: <WidgetEmpty description='No rows' /> }}
       onRow={rowNavigateTo
         ? (row) => {
           const path = buildRowPath(row)

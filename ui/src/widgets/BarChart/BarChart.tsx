@@ -1,6 +1,6 @@
 import { Column } from '@ant-design/plots'
-import { Empty } from 'antd'
 
+import { WidgetEmpty } from '../../components/WidgetStates'
 import { getChartCatPalette } from '../../theme/chart-utils'
 import { getColorCode } from '../../theme/palette'
 import type { WidgetProps } from '../../types/Widget'
@@ -27,7 +27,7 @@ const inkLegend = () => ({ color: { itemLabelFill: getColorCode('text') } })
  */
 const BarChart = ({ uid, widgetData }: WidgetProps<BarChartWidgetData>) => {
   if (!widgetData.data?.length) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+    return <WidgetEmpty description='No data to chart' />
   }
 
   return (
