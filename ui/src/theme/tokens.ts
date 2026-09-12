@@ -142,7 +142,7 @@ export const radius = { sm: 2, md: 4, lg: 8, xl: 12 } as const
 // and the docked Autopilot rail header (AutopilotRail.module.css) both consumed a hardcoded `64px`
 // that only COINCIDENTALLY matched; emitting `--header-h` from here links them so a future change
 // moves both together.
-export const layout = { headerHeight: 64 } as const
+export const layout = { headerHeight: 64, headerIconSize: 36 } as const
 
 /** Light elevation — soft, low-contrast shadows on a light canvas. */
 export const elevation = {
@@ -506,6 +506,7 @@ export const cssVariables = (mode: ThemeMode = 'light') => {
   root.style.setProperty('--font-mono', typography.mono)
   // #86 §0.10: shared app-chrome header height (main header + Autopilot rail header).
   root.style.setProperty('--header-h', `${layout.headerHeight}px`)
+  root.style.setProperty('--header-icon-size', `${layout.headerIconSize}px`)
 
   // Canonical Brand v2 `--krateo-*` tokens (issue #49 §1.2–1.5): base (mode-independent) +
   // mode-aware semantic + chart. `data-theme` is set by ThemeModeContext; these are emitted
