@@ -34,7 +34,9 @@ A scale that ships with no consumers must be adopted or deleted. Leaving it live
 
 **Status:** severe
 
-**10 of 188** padding/margin declarations use the token. `gap:` is **69 of 69 hardcoded — the token has never been used once.** And the raw values don’t cluster on the scale: the most common are 12, 10, 7, 6, 2, 5px.
+**30 of 225** padding/margin declarations use the token; **35 of 104** `gap:` declarations do. So 195 and 69 respectively are hardcoded — 87% and 66%. And the raw values don’t cluster on the scale: the most common are 12, 10, 7, 6, 2, 5px.
+
+> **Corrected.** An earlier version of this rule said `gap:` was "69 of 69 hardcoded — never used once". That was wrong: 35 declarations do use the token, including seven in `Card.module.css` alone. The adoption gap is real and large; it is not total, and overstating it made the rule easier to dismiss than the true figure deserves.
 
 *Evidence: verified `tokens.ts:123` · worst offenders `AutopilotRail.module.css` (59), `Form.module.css` (19), `Select.module.css` (10)*
 

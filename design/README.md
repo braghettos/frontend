@@ -52,8 +52,8 @@ and then nothing consumed it:
 - **The type scale.** [#49](https://github.com/krateo-platformops/frontend/issues/49) shipped a
   12-role scale as `--krateo-text-*`. Zero consumers across every CSS module. 68% of `font-size`
   declarations bypass it and its predecessor both.
-- **The spacing scale.** 10 of 188 padding/margin declarations use the tokens — and `gap:` is
-  69/69 hardcoded. The token has never been used once.
+- **The spacing scale.** 30 of 225 padding/margin declarations use the tokens (87% hardcoded) and
+  35 of 104 `gap:` declarations do (66% hardcoded). Adopted in places, ignored in most.
 - **The containment grammar.** `allowedResources` is declared on seven containers and enforced by
   nothing: not by OpenAPI, not by a webhook, not by the renderer.
 
