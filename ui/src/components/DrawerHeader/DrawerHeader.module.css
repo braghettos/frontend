@@ -5,7 +5,7 @@
 .head {
   align-items: center;
   display: flex;
-  gap: 10px;
+  gap: var(--spacing-smd);
 }
 
 .icon {
