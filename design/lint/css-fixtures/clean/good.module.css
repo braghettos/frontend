@@ -6,8 +6,11 @@
   color: var(--gray-color);
   font-size: var(--font-size-sm);
   gap: var(--spacing-sm);
-  /* `0` and `auto` are not sizes — requiring a token for them would be absurd. */
+  /* `0` and `auto` are not sizes — requiring a token for them would be absurd. Nor is the same
+     pair the other way round: `auto 0` was the last "violation" left in the codebase after the
+     spacing sweep, a declaration containing no length at all demanding a length token. */
   margin: 0 auto;
+  margin-block: auto 0;
   /* Nor is `0 !important` — an override is not a value. This was a real false positive on the
      lint's first CI run, on a file the design system had just added. */
   margin-block: 0 !important;

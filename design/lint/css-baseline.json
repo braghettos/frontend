@@ -19,8 +19,6 @@
     "pages/Login/Login.module.css": 3,
     "widgets/Form/Form.module.css": 1
   },
-  "spacing": {
-    "components/Autopilot/AutopilotRail.module.css": 1
-  },
+  "spacing": {},
   "unguarded-animation": {}
 }

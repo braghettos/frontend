@@ -73,6 +73,16 @@ def rule_font_size(path):
 IMPORTANT = re.compile(r'\s*!\s*important\s*$', re.I)
 
 
+def _not_a_size(value):
+    """True when every part of the value is `0` or `auto` — neither is a length.
+
+    This was a hardcoded set of three strings ('0', 'auto', '0 auto'), which is a list of the
+    cases someone happened to hit rather than a rule. `margin: auto 0` is the same statement with
+    the words the other way round, and it was the last "violation" left in the codebase after the
+    sweep: a declaration containing no length at all, demanding a length token."""
+    return all(p in ('0', 'auto') for p in IMPORTANT.sub('', value).split())
+
+
 def rule_spacing(path):
     """T4 — padding/margin resolve to --spacing-*. `0` and `auto` are not sizes.
 
@@ -83,17 +93,13 @@ def rule_spacing(path):
     they are offsetting against, not to the spacing scale."""
     return _scan(
         path, r'(?:padding|margin)[a-z-]*:\s*([^;]+);',
-        lambda v: (
-            'var(' in v
-            or IMPORTANT.sub('', v).strip() in ('0', 'auto', '0 auto')
-            or re.search(r'-\d', v) is not None
-        ),
+        lambda v: 'var(' in v or _not_a_size(v) or re.search(r'-\d', v) is not None,
     )
 
 
 def rule_gap(path):
     """T4 — gap resolves to --spacing-*."""
-    return _scan(path, r'\bgap:\s*([^;]+);', lambda v: 'var(' in v or IMPORTANT.sub('', v).strip() == '0')
+    return _scan(path, r'\bgap:\s*([^;]+);', lambda v: 'var(' in v or _not_a_size(v))
 
 
 def rule_hex_literal(path):
