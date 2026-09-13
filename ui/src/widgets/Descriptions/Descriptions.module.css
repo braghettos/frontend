@@ -4,7 +4,7 @@
 .formView {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--spacing-md);
 }
 
 .section {
@@ -30,7 +30,7 @@
   border-left: 2px solid color-mix(in srgb, var(--gray-color) 38%, transparent);
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--spacing-xs);
   padding-left: var(--spacing-smd);
 }
 

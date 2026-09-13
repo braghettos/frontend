@@ -35,9 +35,26 @@ def css_files(root):
     )
 
 
+COMMENT = re.compile(r'/\*.*?\*/', re.S)
+
+
+def _decomment(text):
+    """Blank out /* ... */ while keeping every byte offset, so line numbers stay true.
+
+    A comment is prose, not code. These files explain themselves at length — what antd does with
+    `margin-bottom: 1em`, which breakpoint a cluster collapses at — and a scanner that reads prose
+    reports the EXAMPLE as the violation. That is worse than a miss: the only way to satisfy it is
+    to delete the explanation. Newlines are preserved so `text[:start].count("\n")` still works."""
+    return COMMENT.sub(lambda m: re.sub(r'[^\n]', ' ', m.group(0)), text)
+
+
+def _read(path):
+    return _decomment(open(path, encoding='utf-8').read())
+
+
 def _scan(path, pattern, ok):
     """Yield (line, declaration) for every match whose value fails `ok`."""
-    text = open(path, encoding='utf-8').read()
+    text = _read(path)
     for match in re.finditer(pattern, text):
         if ok(match.group(1)):
             continue
@@ -56,6 +73,16 @@ def rule_font_size(path):
 IMPORTANT = re.compile(r'\s*!\s*important\s*$', re.I)
 
 
+def _not_a_size(value):
+    """True when every part of the value is `0` or `auto` — neither is a length.
+
+    This was a hardcoded set of three strings ('0', 'auto', '0 auto'), which is a list of the
+    cases someone happened to hit rather than a rule. `margin: auto 0` is the same statement with
+    the words the other way round, and it was the last "violation" left in the codebase after the
+    sweep: a declaration containing no length at all, demanding a length token."""
+    return all(p in ('0', 'auto') for p in IMPORTANT.sub('', value).split())
+
+
 def rule_spacing(path):
     """T4 — padding/margin resolve to --spacing-*. `0` and `auto` are not sizes.
 
@@ -66,17 +93,13 @@ def rule_spacing(path):
     they are offsetting against, not to the spacing scale."""
     return _scan(
         path, r'(?:padding|margin)[a-z-]*:\s*([^;]+);',
-        lambda v: (
-            'var(' in v
-            or IMPORTANT.sub('', v).strip() in ('0', 'auto', '0 auto')
-            or re.search(r'-\d', v) is not None
-        ),
+        lambda v: 'var(' in v or _not_a_size(v) or re.search(r'-\d', v) is not None,
     )
 
 
 def rule_gap(path):
     """T4 — gap resolves to --spacing-*."""
-    return _scan(path, r'\bgap:\s*([^;]+);', lambda v: 'var(' in v or IMPORTANT.sub('', v).strip() == '0')
+    return _scan(path, r'\bgap:\s*([^;]+);', lambda v: 'var(' in v or _not_a_size(v))
 
 
 def rule_hex_literal(path):
@@ -85,7 +108,7 @@ def rule_hex_literal(path):
     A hex used as a `var()` FALLBACK is exempt: `color-mix(in srgb, var(--text-color, #888) 20%,
     transparent)` is defensive CSS doing the right thing, and flagging it teaches authors to remove
     their fallbacks."""
-    text = open(path, encoding='utf-8').read()
+    text = _read(path)
     for match in re.finditer(r'^\s*([a-z-]+):\s*([^;]+);', text, re.M):
         value = match.group(2)
         stripped = VAR_FALLBACK.sub('', value)
@@ -107,8 +130,12 @@ def rule_unguarded_animation(path):
     """T9 — a looping animation respects prefers-reduced-motion.
 
     File-scoped deliberately: the guard is conventionally a media block at the end of the same
-    file, so cross-file analysis would buy nothing and cost precision."""
-    text = open(path, encoding='utf-8').read()
+    file, so cross-file analysis would buy nothing and cost precision.
+
+    Comments are stripped BOTH sides of this one. A comment that merely mentions
+    prefers-reduced-motion is not a guard, and suppressing the rule on prose would be the one
+    false NEGATIVE in this file — accessibility silently unchecked because someone wrote about it."""
+    text = _read(path)
     if 'prefers-reduced-motion' in text:
         return
     for match in re.finditer(r'animation:[^;]*\binfinite\b[^;]*;', text):

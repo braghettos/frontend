@@ -67,7 +67,7 @@
 
   :global(.ant-modal-header) {
     flex-shrink: 0;
-    padding: 16px 24px !important;
+    padding: var(--spacing-md) var(--spacing-lg) !important;
   }
 
   :global(.ant-modal-body) {

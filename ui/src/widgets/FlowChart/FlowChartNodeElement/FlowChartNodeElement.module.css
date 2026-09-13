@@ -6,7 +6,7 @@
      painted 422px against a box FlowChart.tsx reserves as 400px, and the 22px difference was drawn
      over the edges leaving the node. Geometry is declared once, in FlowChart.tsx `size`. */
   box-sizing: border-box;
-  padding: 10px;
+  padding: var(--spacing-smd);
   position: relative;
   width: 400px;
 
@@ -21,21 +21,21 @@
 
   .header {
     font-size: 14px;
-    padding: 0 10px;
+    padding: 0 var(--spacing-smd);
     text-transform: uppercase;
   }
 
   .subHeader {
     color: $primary-color;
     font-size: var(--krateo-text-caption);
-    padding: 0 10px;
+    padding: 0 var(--spacing-smd);
     text-transform: uppercase;
   }
 
   .body {
     color: var(--gray-color);
     font-size: 14px;
-    padding: 0 10px;
+    padding: 0 var(--spacing-smd);
   }
 
   .footer {
@@ -47,5 +47,5 @@
 .tagFlow {
   background-color: var(--border-color);
   border-radius: 20px;
-  padding: 3px 10px;
+  padding: var(--spacing-xs) var(--spacing-smd);
 }
