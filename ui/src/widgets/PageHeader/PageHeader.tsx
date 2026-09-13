@@ -1,7 +1,7 @@
-import { Flex, Tag, Typography } from 'antd'
+import { Flex, Typography } from 'antd'
 
+import StatusPill from '../../components/StatusPill'
 import WidgetRenderer from '../../components/WidgetRenderer'
-import { getTagStyle } from '../../theme/palette'
 import type { WidgetProps } from '../../types/Widget'
 import { getEndpointUrl } from '../../utils/utils'
 
@@ -48,9 +48,11 @@ const PageHeader = ({ resourcesRefs, uid, widgetData }: WidgetProps<PageHeaderWi
           </Typography.Title>
 
           {(tags ?? []).map(({ color, label }, index) => (
-            // Colour resolves through the shared palette, never an antd preset: the same name
-            // must render the same hex here as it does in a Table cell or a status pill.
-            <Tag key={`${uid}-tag-${index}`} style={color ? getTagStyle(color) : undefined}>{label}</Tag>
+            // The SAME component the Tag widget draws, not a second pill that happens to agree.
+            // Colour resolves through the shared palette, never an antd preset, and the leading
+            // status dot comes with it — a header pill and the pill in the table under it must be
+            // the same object, or the difference shows up as a 6px circle nobody can explain.
+            <StatusPill color={color} key={`${uid}-tag-${index}`} label={label} />
           ))}
         </Flex>
 
