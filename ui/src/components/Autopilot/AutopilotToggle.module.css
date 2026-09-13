@@ -4,7 +4,7 @@
   align-items: center;
   gap: var(--spacing-xsm);
   height: 30px;
-  padding: 0 10px;
+  padding: 0 var(--spacing-smd);
   border-radius: var(--radius-md);
   border: 1px solid color-mix(in srgb, var(--primary-color) 40%, transparent);
   background: color-mix(in srgb, var(--primary-color) 12%, transparent);
@@ -52,7 +52,7 @@
   font-family: inherit;
   font-size: var(--krateo-text-label-xs);
   line-height: 1.6;
-  padding: 0 5px;
+  padding: 0 var(--spacing-xsm);
 }
 
 /*
