@@ -14,37 +14,13 @@
     "widgets/Paragraph/Paragraph.module.css": 1,
     "widgets/Select/Select.module.css": 3
   },
-  "gap": {
-    "components/CommandPalette/CommandPalette.module.css": 1,
-    "components/DrawerHeader/DrawerHeader.module.css": 1,
-    "widgets/Descriptions/Descriptions.module.css": 2,
-    "widgets/List/ListView.module.css": 2,
-    "widgets/Select/Select.module.css": 1,
-    "widgets/Table/Table.module.css": 1
-  },
+  "gap": {},
   "hex-literal": {
     "pages/Login/Login.module.css": 3,
     "widgets/Form/Form.module.css": 1
   },
   "spacing": {
-    "components/Autopilot/AutopilotRail.module.css": 1,
-    "components/Autopilot/AutopilotToggle.module.css": 2,
-    "components/Autopilot/previewSurface.module.css": 1,
-    "components/CommandPalette/CommandPalette.module.css": 2,
-    "pages/Login/LoginForm/LoginForm.module.css": 1,
-    "pages/Login/SocialLogin/SocialLogin.module.css": 1,
-    "widgets/BarChart/BarChart.module.css": 1,
-    "widgets/Card/Card.module.css": 1,
-    "widgets/FlowChart/FlowChartNodeElement/FlowChartNodeElement.module.css": 5,
-    "widgets/Layout/Layout.module.css": 3,
-    "widgets/List/ListView.module.css": 5,
-    "widgets/Markdown/Markdown.module.css": 1,
-    "widgets/Menu/Menu.module.css": 2,
-    "widgets/Modal/Modal.module.css": 1,
-    "widgets/Paragraph/Paragraph.module.css": 1,
-    "widgets/Row/Row.module.css": 1,
-    "widgets/Select/Select.module.css": 7,
-    "widgets/Steps/Steps.module.css": 1
+    "components/Autopilot/AutopilotRail.module.css": 1
   },
   "unguarded-animation": {}
 }
