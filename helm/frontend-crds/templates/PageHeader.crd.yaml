@@ -167,6 +167,9 @@ spec:
                       description: an optional count rendered in brackets beside the title, on the title's own type step (e.g. '(397)'). Use for 'how many of these are there', never for a status
                       format: int32
                       type: integer
+                    counterLabel:
+                      description: the noun the counter counts, rendered inside the same brackets (e.g. '23 blueprints'). Use it when WHAT is being counted changes — a bare '(23)' beside a filtered catalog does not say 23 of what
+                      type: string
                     items:
                       description: 'the page''s actions, rendered right-aligned on the title line. At most one should be `type: primary`'
                       items:

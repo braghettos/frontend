@@ -32,7 +32,7 @@ export type PageHeaderWidgetData = NonNullable<WidgetType['spec']>['widgetData']
  * because only the author knows which one a page is for. The layout affords exactly one.
  */
 const PageHeader = ({ resourcesRefs, uid, widgetData }: WidgetProps<PageHeaderWidgetData>) => {
-  const { counter, items, subtitle, tags, title } = widgetData
+  const { counter, counterLabel, items, subtitle, tags, title } = widgetData
 
   return (
     <div className={styles.header} key={uid}>
@@ -43,7 +43,12 @@ const PageHeader = ({ resourcesRefs, uid, widgetData }: WidgetProps<PageHeaderWi
             {counter !== undefined && (
               // Beside the title and on its type step — a count is part of the title, not a
               // separate fact competing with it.
-              <span className={styles.counter}>({counter})</span>
+              //
+              // `counterLabel` goes INSIDE the brackets rather than after them, because the noun
+              // belongs to the number: "(23 blueprints)", not "(23) blueprints". The Statistic
+              // widget spells the same idea `suffix`, following antd; this one pairs with
+              // `counter`, which is not an antd name either.
+              <span className={styles.counter}>({counter}{counterLabel ? ` ${counterLabel}` : ''})</span>
             )}
           </Typography.Title>
 
