@@ -85,7 +85,7 @@
   font-family: inherit;
   font-size: var(--font-size-xxs);
   line-height: 1.6;
-  padding: 0 6px;
+  padding: 0 var(--spacing-xsm);
 }
 
 .modalIcon {
@@ -180,5 +180,5 @@
   color: var(--gray-color);
   font-family: inherit;
   font-size: var(--font-size-xxs);
-  padding: 1px 5px;
+  padding: var(--spacing-xxs) var(--spacing-xsm);
 }
