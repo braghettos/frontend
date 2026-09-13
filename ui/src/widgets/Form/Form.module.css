@@ -15,7 +15,7 @@
     display: flex;
     gap: var(--spacing-sm);
     justify-content: flex-end;
-    padding: 12px 4px 14px;
+    padding: var(--spacing-smd) var(--spacing-xs) var(--spacing-md);
     position: sticky;
     z-index: 3;
   }
@@ -103,7 +103,7 @@
           background: var(--lightgray-color);
           border-radius: 10px;
           box-sizing: border-box;
-          padding: 10px;
+          padding: var(--spacing-smd);
           width: 100%;
         }
       }
@@ -137,7 +137,7 @@
   .anchorLabelWrapper {
     height: 100%;
     overflow-y: auto;
-    padding: 0 20px;
+    padding: 0 var(--spacing-lg);
     position: sticky;
     top: 0;
 
@@ -206,7 +206,7 @@
 .fieldLabel {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--spacing-xs);
   width: 100%;
 }
 
@@ -235,7 +235,7 @@
    active name↔value pair obvious. */
 .field {
   border-left: 2px solid color-mix(in srgb, var(--gray-color) 38%, transparent);
-  margin-bottom: 16px !important;
+  margin-bottom: var(--spacing-md) !important;
   padding-left: var(--spacing-smd);
   transition: border-color 0.15s ease;
 }
@@ -252,7 +252,7 @@
 }
 
 .field :global(.ant-form-item-label) {
-  padding-bottom: 5px;
+  padding-bottom: var(--spacing-xsm);
   text-align: left;
   white-space: normal;
 }
@@ -273,12 +273,12 @@
    group name together with its child fields (the rail nests, so depth stays legible). */
 .group {
   border-left: 2px solid color-mix(in srgb, var(--gray-color) 38%, transparent);
-  margin: 20px 0 8px;
+  margin: var(--spacing-lg) 0 var(--spacing-sm);
   padding-left: var(--spacing-smd);
 }
 
 .groupBody {
-  margin-top: 10px;
+  margin-top: var(--spacing-smd);
   padding-left: var(--spacing-smd);
 }
 
@@ -290,7 +290,7 @@
   background: transparent;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  margin: 20px 0 8px;
+  margin: var(--spacing-lg) 0 var(--spacing-sm);
 }
 
 .advanced :global(.ant-collapse-header) {
@@ -308,7 +308,7 @@
 .sectioned {
   align-items: flex-start;
   display: flex;
-  gap: 22px;
+  gap: var(--spacing-lg);
 }
 
 .secNav {
@@ -328,7 +328,7 @@
   cursor: pointer;
   font-size: var(--krateo-text-body-sm);
   overflow: hidden;
-  padding: 8px 12px;
+  padding: var(--spacing-sm) var(--spacing-smd);
   position: relative;
   text-align: left;
   text-overflow: ellipsis;

@@ -20,7 +20,6 @@
     "components/DrawerHeader/DrawerHeader.module.css": 1,
     "widgets/Card/Card.module.css": 3,
     "widgets/Descriptions/Descriptions.module.css": 2,
-    "widgets/Form/Form.module.css": 2,
     "widgets/List/ListView.module.css": 2,
     "widgets/Select/Select.module.css": 1,
     "widgets/Table/Table.module.css": 1
@@ -40,7 +39,6 @@
     "widgets/BarChart/BarChart.module.css": 1,
     "widgets/Card/Card.module.css": 5,
     "widgets/FlowChart/FlowChartNodeElement/FlowChartNodeElement.module.css": 5,
-    "widgets/Form/Form.module.css": 9,
     "widgets/Layout/Layout.module.css": 3,
     "widgets/List/ListView.module.css": 5,
     "widgets/Markdown/Markdown.module.css": 1,
