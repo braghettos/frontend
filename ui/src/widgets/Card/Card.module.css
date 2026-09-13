@@ -10,7 +10,7 @@
      against `.panel` (which spans head+body and is already position:relative) so it centres against
      the FULL panel height. Gated on `.hasExtraAction` (set in Card.tsx only when extraEndpoint is
      truthy) so plain `extra`/legend/tag/badge/statCard headers are byte-for-byte untouched.
-     `margin:0` neutralises antd's `.ant-card-extra{ margin-inline-start:auto }`; `right` matches
+     `margin: 0` neutralises antd's `.ant-card-extra{ margin-inline-start:auto }`; `right` matches
      the header padding so horizontal placement is unchanged. Single-consumer today — if a future
      card ever co-locates extraRefId WITH a legend in the same extra fragment, both would be
      absolutely-positioned and mis-stack. */
@@ -168,8 +168,8 @@
       border-radius: var(--radius-sm);
       display: inline-flex;
       flex: 0 0 auto;
-      gap: 5px;
-      padding: 1px 8px;
+      gap: var(--spacing-xsm);
+      padding: var(--spacing-xxs) var(--spacing-sm);
 
       :global(.ant-badge-status-dot) {
         background: var(--cyan-color);
@@ -187,7 +187,7 @@
         font-family: var(--font-mono);
         font-size: var(--krateo-text-label-xs);
         letter-spacing: 0.06em;
-        margin-inline-start: 5px;
+        margin-inline-start: var(--spacing-xsm);
         text-transform: uppercase;
       }
     }
@@ -223,7 +223,7 @@
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: var(--spacing-md);
 }
 
 .legendItem {
@@ -254,8 +254,8 @@
   border-radius: var(--radius-sm);
   display: inline-flex;
   flex: 0 0 auto;
-  gap: 5px;
-  padding: 1px 8px;
+  gap: var(--spacing-xsm);
+  padding: var(--spacing-xxs) var(--spacing-sm);
 
   :global(.ant-badge-status-dot) {
     background: var(--cyan-color);
@@ -269,7 +269,7 @@
     font-family: var(--font-mono);
     font-size: var(--krateo-text-label-xs);
     letter-spacing: 0.06em;
-    margin-inline-start: 5px;
+    margin-inline-start: var(--spacing-xsm);
     text-transform: uppercase;
   }
 
