@@ -33,3 +33,10 @@
 @media (prefers-reduced-motion: reduce) {
   .b { animation: none; }
 }
+
+/* Prose is not code. This comment mentions padding: 7px and a @media (max-width: 1180px)
+   breakpoint while explaining something, and neither is a violation — a scanner that reads
+   comments reports the EXAMPLE, and the only way to satisfy it is to delete the explanation. */
+.documented {
+  padding: var(--spacing-sm);
+}
