@@ -59,6 +59,31 @@ describe('PageHeader', () => {
     expect(screen.getByText('Healthy')).toBeTruthy()
   })
 
+  /*
+   * These two exist because the dot went missing and nothing noticed.
+   *
+   * `tags` originally rendered a bare antd Tag with the palette tint on it — same hex, same word,
+   * no leading status dot — while the Tag WIDGET drew one for every coloured, labelled pill. On a
+   * detail page the two sit inches apart, and they did not match. The test above passed the whole
+   * time, because asserting the LABEL says nothing about the pill.
+   *
+   * It mattered beyond one page: `tags` is the route every detail page's status pill is migrating
+   * onto, so all four would have lost their dot on the way in.
+   */
+  it('draws the leading status dot on a coloured, labelled tag — the same pill the Tag widget draws', () => {
+    const { container } = renderHeader({ tags: [{ color: 'green', label: 'Healthy' }] })
+    const dot = container.querySelector('.ant-tag span[style*="border-radius: 50%"]')
+    expect(dot).toBeTruthy()
+    expect((dot as HTMLElement).style.height).toBe('6px')
+  })
+
+  it('draws NO dot when the tag has no label — colour alone is not a status', () => {
+    // A dot with no word carries its meaning by colour alone: invisible to a screen reader, to a
+    // colourblind reader, and gone the moment the page is screenshotted into a ticket.
+    const { container } = renderHeader({ tags: [{ color: 'green', label: '' }] })
+    expect(container.querySelector('.ant-tag span[style*="border-radius: 50%"]')).toBeNull()
+  })
+
   it('renders the subtitle when given, and nothing when not', () => {
     const { unmount } = renderHeader({ subtitle: 'Every composition on the cluster' })
     expect(screen.getByText('Every composition on the cluster')).toBeTruthy()
