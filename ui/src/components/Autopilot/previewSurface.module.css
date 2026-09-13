@@ -84,7 +84,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-xsm);
-  margin-bottom: 10px;
+  margin-bottom: var(--spacing-smd);
 }
 
 /* FE-K(edit): the editable RestDefinition source block (headline + textarea + apply row). */
