@@ -21,6 +21,10 @@ export interface PageHeader {
        */
       counter?: number
       /**
+       * the noun the counter counts, rendered inside the same brackets (e.g. '23 blueprints'). Use it when WHAT is being counted changes — a bare '(23)' beside a filtered catalog does not say 23 of what
+       */
+      counterLabel?: string
+      /**
        * one line of supporting context below the title. Must NOT restate the title — say it once per page
        */
       subtitle?: string

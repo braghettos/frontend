@@ -54,6 +54,17 @@ describe('PageHeader', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('(0)')
   })
 
+  it('renders the counter with its noun inside the brackets', () => {
+    // Inside, not after: the noun belongs to the number. "(23 blueprints)", never "(23) blueprints".
+    renderHeader({ counter: 23, counterLabel: 'blueprints' })
+    expect(screen.getByText('(23 blueprints)')).toBeTruthy()
+  })
+
+  it('renders a bare counter when no noun is given', () => {
+    renderHeader({ counter: 7 })
+    expect(screen.getByText('(7)')).toBeTruthy()
+  })
+
   it('places tags on the title line', () => {
     renderHeader({ tags: [{ color: 'green', label: 'Healthy' }] })
     expect(screen.getByText('Healthy')).toBeTruthy()
