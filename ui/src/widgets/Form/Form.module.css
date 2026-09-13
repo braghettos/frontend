@@ -223,7 +223,7 @@
 
 .fieldDesc {
   color: var(--gray-color);
-  font-size: 11.5px;
+  font-size: var(--text-caption);
   font-weight: 400;
   line-height: 1.45;
   white-space: normal;

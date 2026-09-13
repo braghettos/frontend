@@ -43,3 +43,10 @@
 .documented {
   padding: var(--spacing-sm);
 }
+
+/* `1em` declares no size of its own — it restates the parent's. The rail's markdown block uses
+   exactly this to flatten h1-h6 to body size: a deliberate suppression of the heading ramp, not
+   a size chosen off-scale. There is nothing for a token to name. */
+.inheritsItsSize {
+  font-size: 1em;
+}

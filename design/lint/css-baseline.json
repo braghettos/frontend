@@ -5,14 +5,8 @@
     "pages/Login/Login.module.css": 1
   },
   "font-size": {
-    "components/Autopilot/AutopilotRail.module.css": 9,
-    "components/Autopilot/AutopilotToggle.module.css": 1,
-    "widgets/Descriptions/Descriptions.module.css": 1,
-    "widgets/FlowChart/FlowChartNodeElement/FlowChartNodeElement.module.css": 2,
-    "widgets/Form/Form.module.css": 1,
-    "widgets/List/ListView.module.css": 5,
-    "widgets/Paragraph/Paragraph.module.css": 1,
-    "widgets/Select/Select.module.css": 3
+    "widgets/List/ListView.module.css": 1,
+    "widgets/Paragraph/Paragraph.module.css": 1
   },
   "gap": {},
   "hex-literal": {
