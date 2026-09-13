@@ -63,8 +63,20 @@ def _scan(path, pattern, ok):
 
 
 def rule_font_size(path):
-    """T3 — every font-size resolves to a token, not a raw number."""
-    return _scan(path, r'font-size:\s*([^;]+);', lambda v: 'var(' in v)
+    """T3 — every font-size resolves to a token, not a raw number.
+
+    `1em`, `100%` and `inherit` are exempt: they declare NO size of their own, they restate the
+    parent's. The markdown block in the Autopilot rail uses this to flatten h1-h6 to body size —
+    a deliberate suppression of the heading ramp, not a size chosen off-scale. There is nothing
+    for a token to name.
+
+    Anything else relative (`0.85em`) is NOT exempt. It picks a size the scale does not contain,
+    which is exactly what this rule exists to notice; that it does so as a ratio rather than a
+    number makes it harder to see, not more legitimate."""
+    return _scan(
+        path, r'font-size:\s*([^;]+);',
+        lambda v: 'var(' in v or IMPORTANT.sub('', v).strip() in ('1em', '100%', 'inherit'),
+    )
 
 
 # `!important` is an override, not a value — stripping it before the exemption check is what keeps

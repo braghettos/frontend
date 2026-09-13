@@ -20,7 +20,7 @@
   }
 
   .header {
-    font-size: 14px;
+    font-size: var(--text-body);
     padding: 0 var(--spacing-smd);
     text-transform: uppercase;
   }
@@ -34,7 +34,7 @@
 
   .body {
     color: var(--gray-color);
-    font-size: 14px;
+    font-size: var(--text-body);
     padding: 0 var(--spacing-smd);
   }
 
