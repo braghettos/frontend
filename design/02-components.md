@@ -254,3 +254,31 @@ Everything else is undefined. Notifications declares no z-index; the widget draw
 **The rule:** a new drawer surface declares its z-index relative to the existing ones rather than inheriting a default, and any surface that can host a gated action sits *below* the confirm — the trapped-gate bug is the one that makes a page unusable rather than merely untidy.
 
 *Evidence: verified `Drawer.tsx:14-49` · `Notifications.tsx:230` · `previewSurface.tsx:47-55,376-396` · Shell mounts one `<Drawer />`*
+
+### C24 — A widget that draws something the set already draws must reuse the component, not re-derive it.
+
+Not "must look the same" — must **be** the same component. A second implementation that agrees
+today is not a match, it is a copy waiting to drift, and the drift is invisible: same colour, same
+word, one detail missing.
+
+This rule exists because it was broken the day `PageHeader` was written. Its native `tags` array
+rendered a bare antd `Tag` with the shared palette tint applied — correct hex, correct label, and
+**no leading status dot**, which the `Tag` widget draws for every coloured, labelled pill. On a
+detail page the two pills sit inches apart and did not match.
+
+Every check that existed passed. The colour came from the shared palette, so the token rules were
+satisfied. The CRD validated, because a missing 6px circle is not a schema error. The widget's own
+test asserted the tag's **label** — which says nothing about the pill. It was found by an
+adversarial review of a *later* migration, one page before four detail pages inherited it.
+
+The tell is textual and easy to grep for: a widget importing a primitive (`import { Tag } from
+'antd'`) plus the shared styling helper that the set's own widget already applies (`getTagStyle`).
+That pairing means a component was rebuilt rather than reused. Extract the shared piece — the way
+`StatusPill` now backs both `Tag` and `PageHeader` — and forward unrecognised props untouched, so
+the extraction is not a silent behaviour change.
+
+Applies to the CR surface too, not just rendering: before giving a new widget a required field,
+read what the closest existing widget requires. `PageHeader` shipped with `allowedResources` and
+`items` required because they were copied from a container schema; `Card`, the actual precedent,
+requires only `items`. That cost a release cycle to undo, on a widget whose entire purpose was to
+delete ceremony.
